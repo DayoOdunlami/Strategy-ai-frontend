@@ -96,36 +96,52 @@ export function ChatInterface() {
     setInput("")
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      // Create a mock AI response
+    try {
+      // Import API client dynamically to avoid SSR issues
+      const { default: apiClient } = await import('@/lib/api-client')
+      
+      // Call real backend API
+      const response = await apiClient.chat.sendMessage({
+        message: input,
+        sector: sector as any,
+        use_case: useCase as any,
+        user_type: "public"
+      })
+
+      // Create AI response from backend
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
-        content:
-          "This is a simulated response from the AI assistant. In a real implementation, this would come from the API endpoint `/api/chat`.",
-        timestamp: new Date(),
-        confidence: 0.87,
-        sources: [
-          {
-            id: "doc-1",
-            title: "Rail Modernization Strategy 2023",
-            excerpt:
-              "The rail modernization strategy focuses on digital transformation and sustainable infrastructure development.",
-          },
-          {
-            id: "doc-2",
-            title: "Network Rail Technical Strategy",
-            excerpt:
-              "The technical strategy outlines the approach to implementing new technologies across the rail network.",
-          },
-        ],
+        content: response.response,
+        timestamp: new Date(response.timestamp),
+        confidence: response.confidence,
+        sources: response.sources?.map((source, index) => ({
+          id: `source-${index}`,
+          title: source.document_title,
+          excerpt: source.chunk_preview,
+          url: source.source
+        })) || [],
       }
 
       // Add AI response to the chat
       setMessages((prev) => [...prev, aiResponse])
+    } catch (error) {
+      console.error('Chat API error:', error)
+      
+      // Fallback response on error
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        type: "assistant",
+        content: "I apologize, but I'm having trouble connecting to the AI system right now. Please try again in a moment.",
+        timestamp: new Date(),
+        confidence: 0.0,
+        sources: [],
+      }
+      
+      setMessages((prev) => [...prev, errorResponse])
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
