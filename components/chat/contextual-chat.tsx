@@ -129,22 +129,62 @@ export function ContextualChat({ context, className }: ContextualChatProps) {
     }
 
     setMessages((prev) => [...prev, userMessage])
+    const userInput = input
     setInput("")
     setIsLoading(true)
 
-    // Simulate AI response with context-aware content
-    setTimeout(() => {
+    try {
+      // Call real backend API for contextual chat
+      const response = await fetch('https://web-production-6045b.up.railway.app/api/chat/contextual', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userInput,
+          context: context
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      // Create AI response from backend
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
-        content: generateContextualResponse(input, context),
-        timestamp: new Date(),
-        actions: generateContextualActions(input, context),
+        content: data.response,
+        timestamp: new Date(data.timestamp),
+        actions: data.actions?.map((action: any, index: number) => ({
+          id: action.id,
+          label: action.label,
+          action: () => {
+            console.log(`Executing ${action.type} action:`, action.label)
+            // You can add specific action handlers here based on action.type
+          }
+        })) || [],
       }
 
       setMessages((prev) => [...prev, aiMessage])
+    } catch (error) {
+      console.error('Error calling contextual chat API:', error)
+      
+      // Fallback to demo response if API fails
+      const aiMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: "assistant",
+        content: generateContextualResponse(userInput, context),
+        timestamp: new Date(),
+        actions: generateContextualActions(userInput, context),
+      }
+
+      setMessages((prev) => [...prev, aiMessage])
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   const handleSuggestionClick = (suggestion: string) => {
