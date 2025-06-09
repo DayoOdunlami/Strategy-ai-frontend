@@ -531,7 +531,10 @@ export function RailwayMapRealBoundaries() {
             </Button>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-4">{selectedRegion.region.description}</p>
+            {/* Network Rail Official Description */}
+            <p className="text-muted-foreground mb-4">
+              {selectedRegion.region.networkRail?.fullDescription || selectedRegion.region.description}
+            </p>
             
             {selectedRegion.clickedDistrict && (
               <div className="mb-4 p-3 bg-muted/30 rounded">
@@ -540,30 +543,85 @@ export function RailwayMapRealBoundaries() {
                 <p className="text-xs text-muted-foreground">{selectedRegion.clickedDistrict.code}</p>
               </div>
             )}
-            
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="text-center p-3 bg-muted/30 rounded">
-                <p className="text-2xl font-bold text-primary">{selectedRegion.stats.stations}</p>
-                <p className="text-sm text-muted-foreground">Stations</p>
+
+            {/* Director Information */}
+            {selectedRegion.region.networkRail && (
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
+                <p className="font-semibold text-blue-700 dark:text-blue-300 mb-1">👤 Regional Director</p>
+                <p className="text-blue-600 dark:text-blue-400">{selectedRegion.region.networkRail.director}</p>
               </div>
-              <div className="text-center p-3 bg-muted/30 rounded">
-                <p className="text-2xl font-bold text-primary">{selectedRegion.stats.projects}</p>
-                <p className="text-sm text-muted-foreground">Projects</p>
+            )}
+
+            {/* Network Rail Statistics */}
+            {selectedRegion.region.networkRail && (
+              <div className="mb-4">
+                <p className="font-semibold mb-2 text-green-600">📊 Network Rail Statistics</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center p-3 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
+                    <p className="text-xl font-bold text-green-700 dark:text-green-400">{selectedRegion.region.networkRail.stats.routeMiles.toLocaleString()}</p>
+                    <p className="text-xs text-green-600 dark:text-green-300">Route Miles</p>
+                  </div>
+                  <div className="text-center p-3 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
+                    <p className="text-xl font-bold text-green-700 dark:text-green-400">{selectedRegion.region.networkRail.stats.stations.toLocaleString()}</p>
+                    <p className="text-xs text-green-600 dark:text-green-300">Stations</p>
+                  </div>
+                  <div className="text-center p-3 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
+                    <p className="text-xl font-bold text-green-700 dark:text-green-400">{selectedRegion.region.networkRail.stats.employees}</p>
+                    <p className="text-xs text-green-600 dark:text-green-300">Employees</p>
+                  </div>
+                </div>
               </div>
-              <div className="text-center p-3 bg-muted/30 rounded">
-                <p className="text-2xl font-bold text-primary">{selectedRegion.stats.documents}</p>
-                <p className="text-sm text-muted-foreground">Documents</p>
+            )}
+
+            {/* Placeholder Data for CPC Projects & Documents */}
+            <div className="mb-4">
+              <p className="font-semibold mb-2 text-orange-600">🚧 Placeholder Data (To Be Updated)</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/20 rounded border border-orange-200 dark:border-orange-800">
+                  <p className="text-xl font-bold text-orange-700 dark:text-orange-400">{Math.floor(Math.random() * 20) + 5}</p>
+                  <p className="text-xs text-orange-600 dark:text-orange-300">CPC Projects*</p>
+                </div>
+                <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/20 rounded border border-orange-200 dark:border-orange-800">
+                  <p className="text-xl font-bold text-orange-700 dark:text-orange-400">{Math.floor(Math.random() * 100) + 20}</p>
+                  <p className="text-xs text-orange-600 dark:text-orange-300">Documents*</p>
+                </div>
               </div>
+              <p className="text-xs text-orange-500 mt-2 italic">* Dummy data - will be replaced with real CPC project data and document scraping</p>
             </div>
 
-            <div>
+            {/* Railway Routes */}
+            {selectedRegion.region.networkRail && (
+              <div className="mb-4">
+                <p className="font-semibold mb-2">🚂 Railway Routes:</p>
+                <div className="flex flex-wrap gap-1">
+                  {selectedRegion.region.networkRail.routes.map((route: string) => (
+                    <Badge key={route} variant="outline">{route}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Major Cities (fallback) */}
+            <div className="mb-4">
               <p className="font-semibold mb-2">🏙️ Major Cities:</p>
               <div className="flex flex-wrap gap-1">
                 {selectedRegion.region.major_cities.map((city: string) => (
-                  <Badge key={city} variant="outline">{city}</Badge>
+                  <Badge key={city} variant="secondary">{city}</Badge>
                 ))}
               </div>
             </div>
+
+            {/* Network Rail Link */}
+            {selectedRegion.region.networkRail && (
+              <div className="pt-3 border-t">
+                <Button 
+                  className="w-full" 
+                  onClick={() => window.open(selectedRegion.region.networkRail.url, '_blank')}
+                >
+                  🔗 View on Network Rail
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
