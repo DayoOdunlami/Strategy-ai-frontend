@@ -18,11 +18,11 @@ export function AnalyticsDashboard() {
   const [timeRange, setTimeRange] = useState("7d")
   const [loading, setLoading] = useState(true)
   const [analytics, setAnalytics] = useState<any>(null)
-  const { useSampleData, isHydrated } = useDemoMode()
+  const { useSampleData } = useDemoMode()
 
   useEffect(() => {
     loadAnalytics()
-  }, [timeRange, useSampleData, isHydrated])
+  }, [timeRange, useSampleData])
 
   const loadAnalytics = async () => {
     setLoading(true)

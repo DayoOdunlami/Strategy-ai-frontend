@@ -60,11 +60,11 @@ export function DocumentManagement() {
     tags: "",
   })
   const [csvImportOpen, setCsvImportOpen] = useState(false)
-  const { useSampleData, isHydrated } = useDemoMode()
+  const { useSampleData } = useDemoMode()
 
   useEffect(() => {
     loadDocuments()
-  }, [filters, searchQuery, useSampleData, isHydrated])
+  }, [filters, searchQuery, useSampleData])
 
   const loadDocuments = async () => {
     setLoading(true)
