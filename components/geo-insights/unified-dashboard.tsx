@@ -23,23 +23,7 @@ import {
 } from 'lucide-react'
 import { MapInsightsPanel } from './map-insights-panel'
 import { ContextualExplorer } from './contextual-explorer'
-
-// Simple map placeholder for now - can be enhanced later
-const SimpleMapPlaceholder = () => (
-  <div className="w-full h-full bg-gradient-to-br from-blue-50 to-green-50 rounded-lg flex items-center justify-center relative overflow-hidden">
-    <div className="absolute inset-0 bg-cover bg-center opacity-60" 
-         style={{backgroundImage: "url('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-E7dq4340TkgCCloHoDxEj5niS5gjxm.png')"}} />
-    <div className="relative z-10 text-center p-8">
-      <Map className="mx-auto h-16 w-16 text-blue-600 mb-4" />
-      <h3 className="text-xl font-semibold text-gray-800 mb-2">Interactive Railway Map</h3>
-      <p className="text-gray-600 mb-4">Click regions and stations to generate insights</p>
-      <div className="space-y-2">
-        <div className="bg-white/80 px-3 py-1 rounded text-sm">🗺️ Map integration coming soon</div>
-        <div className="bg-white/80 px-3 py-1 rounded text-sm">🔗 Will connect to existing map component</div>
-      </div>
-    </div>
-  </div>
-)
+import { RailwayMapRealBoundaries } from '@/components/map/railway-map-real-boundaries'
 
 export function UnifiedDashboard() {
   const { state, selectRegion, selectStation, toggleSync, dispatch } = useGeoInsight()

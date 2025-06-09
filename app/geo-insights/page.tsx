@@ -1,14 +1,14 @@
 "use client"
 
-import { GeoInsightProvider } from '@/components/geo-insights/geo-insight-provider'
-import { UnifiedDashboard } from '@/components/geo-insights/unified-dashboard'
+import { DashboardLayout } from "@/components/layout/dashboard-layout"
+import { MergedGeoInsights } from "@/components/geo-insights/merged-geo-insights"
+import { ContextualChat } from "@/components/chat/contextual-chat"
 
 export default function GeoInsightsPage() {
   return (
-    <GeoInsightProvider>
-      <div className="min-h-screen bg-gray-50">
-        <UnifiedDashboard />
-      </div>
-    </GeoInsightProvider>
+    <DashboardLayout>
+      <MergedGeoInsights />
+      <ContextualChat context="insights" />
+    </DashboardLayout>
   )
 } 
