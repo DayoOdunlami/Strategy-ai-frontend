@@ -118,8 +118,8 @@ export function IntegrationSettings() {
           },
           supabase: {
             ...prev.supabase,
-            status: healthData.services?.supabase === "connected" ? "connected" : 
-                   healthData.services?.supabase === "not_configured" ? "unknown" : "disconnected"
+            status: prev.supabase.url && prev.supabase.apiKey ? "connected" : 
+                   healthData.services?.supabase === "connected" ? "connected" : "unknown"
           },
           // Add more mappings as backend provides them
         }))
@@ -478,9 +478,7 @@ export function IntegrationSettings() {
               </div>
             )}
 
-            <Button variant="outline" size="sm" onClick={() => testConnection("Vercel Blob")}>
-              Test Connection
-            </Button>
+
           </div>
 
           {/* Network Rail API */}
@@ -524,9 +522,7 @@ export function IntegrationSettings() {
               </div>
             )}
 
-            <Button variant="outline" size="sm" onClick={() => testConnection("Network Rail API")}>
-              Test Connection
-            </Button>
+
           </div>
         </CardContent>
       </Card>
