@@ -12,10 +12,12 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 
 // API client for backend health checks
+const BACKEND_URL = 'https://web-production-6045b.up.railway.app'
+
 const healthAPI = {
   checkSystemHealth: async () => {
     try {
-      const response = await fetch('/health', {
+      const response = await fetch(`${BACKEND_URL}/health`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       })
@@ -31,7 +33,7 @@ const healthAPI = {
 
   checkAIStatus: async () => {
     try {
-      const response = await fetch('/ai/status', {
+      const response = await fetch(`${BACKEND_URL}/ai/status`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       })
@@ -285,9 +287,7 @@ export function IntegrationSettings() {
               </div>
             )}
 
-            <Button variant="outline" size="sm" onClick={() => testConnection("OpenAI")}>
-              Test Connection
-            </Button>
+
           </div>
 
           {/* Pinecone */}
@@ -338,9 +338,7 @@ export function IntegrationSettings() {
               </div>
             )}
 
-            <Button variant="outline" size="sm" onClick={() => testConnection("Pinecone")}>
-              Test Connection
-            </Button>
+
           </div>
         </CardContent>
       </Card>
@@ -385,9 +383,7 @@ export function IntegrationSettings() {
               </div>
             )}
 
-            <Button variant="outline" size="sm" onClick={() => testConnection("Neon")}>
-              Test Connection
-            </Button>
+
           </div>
 
           {/* Supabase */}
