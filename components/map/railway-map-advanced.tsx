@@ -253,31 +253,141 @@ export function RailwayMapAdvanced() {
   }, [])
 
   const createRailwayRegionsGeoJSON = (ukData: any) => {
-    // Create approximate railway regions from UK local authority districts
+    // Map UK Local Authority Districts to railway regions based on geographical logic
     const railwayFeatures = RAILWAY_REGIONS.map(region => {
-      // Get approximate bounds for each railway region
-      const bounds = getRegionBounds(region.region_id)
-      
-      return {
-        type: 'Feature',
-        properties: {
-          region_id: region.region_id,
-          name: region.name,
-          code: region.code,
-          description: region.description,
-          color: region.color,
-          major_cities: region.major_cities.join(', ')
-        },
-        geometry: {
-          type: 'Polygon',
-          coordinates: [bounds]
+      // Find UK districts that belong to this railway region
+      const matchingDistricts = ukData.features.filter((feature: any) => {
+        return assignDistrictToRailwayRegion(feature, region)
+      })
+
+      if (matchingDistricts.length > 0) {
+        // Use the first matching district's geometry (in practice, you'd union all geometries)
+        // For now, let's combine multiple districts by creating a rough union
+        const combinedGeometry = combineDistrictGeometries(matchingDistricts)
+        
+        return {
+          type: 'Feature',
+          properties: {
+            region_id: region.region_id,
+            name: region.name,
+            code: region.code,
+            description: region.description,
+            color: region.color,
+            major_cities: region.major_cities.join(', '),
+            districts_count: matchingDistricts.length
+          },
+          geometry: combinedGeometry
+        }
+      } else {
+        // Fallback to bounds if no districts found
+        const bounds = getRegionBounds(region.region_id)
+        return {
+          type: 'Feature',
+          properties: {
+            region_id: region.region_id,
+            name: region.name,
+            code: region.code,
+            description: region.description,
+            color: region.color,
+            major_cities: region.major_cities.join(', '),
+            districts_count: 0
+          },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [bounds]
+          }
         }
       }
     })
 
     return {
       type: 'FeatureCollection',
-      features: railwayFeatures
+      features: railwayFeatures.filter(f => f !== null)
+    }
+  }
+
+  const assignDistrictToRailwayRegion = (district: any, region: any): boolean => {
+    const districtName = district.properties.LAD13NM?.toLowerCase() || ''
+    const lat = district.properties.LAD13CDO_Y || 0
+    const lon = district.properties.LAD13CDO_X || 0
+
+    // Geographical assignment based on location and major cities
+    switch (region.region_id) {
+      case 'scotland':
+        return lat > 55 || districtName.includes('scotland') || 
+               districtName.includes('edinburgh') || districtName.includes('glasgow') ||
+               districtName.includes('aberdeen') || districtName.includes('dundee')
+      
+      case 'london_north_eastern':
+        return (lat > 53 && lat < 55.5 && lon > -2) || 
+               districtName.includes('york') || districtName.includes('leeds') ||
+               districtName.includes('newcastle') || districtName.includes('durham')
+      
+      case 'london_north_western':
+        return (lat > 52 && lat < 55 && lon < -1.5) ||
+               districtName.includes('manchester') || districtName.includes('liverpool') ||
+               districtName.includes('birmingham') || districtName.includes('stoke')
+      
+      case 'eastern':
+        return (lat > 51.5 && lat < 53 && lon > 0) ||
+               districtName.includes('cambridge') || districtName.includes('norwich') ||
+               districtName.includes('ipswich') || districtName.includes('peterborough')
+      
+      case 'western':
+        return lon < -2.5 || districtName.includes('wales') || districtName.includes('cymru') ||
+               districtName.includes('bristol') || districtName.includes('cardiff') ||
+               districtName.includes('swansea') || districtName.includes('plymouth')
+      
+      case 'southern':
+        return (lat < 52 && lon > -1) ||
+               districtName.includes('brighton') || districtName.includes('portsmouth') ||
+               districtName.includes('dover') || districtName.includes('canterbury') ||
+               districtName.includes('london')
+      
+      default:
+        return false
+    }
+  }
+
+  const combineDistrictGeometries = (districts: any[]): any => {
+    if (districts.length === 0) return null
+    if (districts.length === 1) return districts[0].geometry
+
+    // For multiple districts, create a rough bounding polygon
+    // In production, you'd use a proper geometry union library like Turf.js
+    let minLon = Infinity, maxLon = -Infinity
+    let minLat = Infinity, maxLat = -Infinity
+
+    districts.forEach(district => {
+      if (district.geometry.type === 'Polygon') {
+        district.geometry.coordinates[0].forEach((coord: number[]) => {
+          minLon = Math.min(minLon, coord[0])
+          maxLon = Math.max(maxLon, coord[0])
+          minLat = Math.min(minLat, coord[1])
+          maxLat = Math.max(maxLat, coord[1])
+        })
+      } else if (district.geometry.type === 'MultiPolygon') {
+        district.geometry.coordinates.forEach((polygon: number[][][]) => {
+          polygon[0].forEach((coord: number[]) => {
+            minLon = Math.min(minLon, coord[0])
+            maxLon = Math.max(maxLon, coord[0])
+            minLat = Math.min(minLat, coord[1])
+            maxLat = Math.max(maxLat, coord[1])
+          })
+        })
+      }
+    })
+
+    // Create a polygon from the bounding rectangle
+    return {
+      type: 'Polygon',
+      coordinates: [[
+        [minLon, minLat],
+        [maxLon, minLat],
+        [maxLon, maxLat],
+        [minLon, maxLat],
+        [minLon, minLat]
+      ]]
     }
   }
 

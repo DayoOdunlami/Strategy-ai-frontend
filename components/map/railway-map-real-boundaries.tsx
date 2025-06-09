@@ -1,0 +1,512 @@
+"use client"
+
+import { useEffect, useRef, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { X, ZoomIn, ZoomOut, RotateCcw, Loader2 } from "lucide-react"
+
+// Railway regions with improved geographical mapping
+const RAILWAY_REGIONS = [
+  {
+    region_id: "scotland",
+    name: "Scotland",
+    code: "SC",
+    description: "Scottish railway network",
+    color: "#8c564b",
+    major_cities: ["Glasgow", "Edinburgh", "Aberdeen", "Dundee"]
+  },
+  {
+    region_id: "london_north_eastern",
+    name: "London North Eastern",
+    code: "LNE",
+    description: "East Coast routes and Yorkshire",
+    color: "#1f77b4",
+    major_cities: ["York", "Leeds", "Newcastle", "Sheffield"]
+  },
+  {
+    region_id: "london_north_western",
+    name: "London North Western",
+    code: "LNW",
+    description: "West Coast and North West England",
+    color: "#ff7f0e",
+    major_cities: ["Manchester", "Liverpool", "Birmingham", "Preston"]
+  },
+  {
+    region_id: "eastern",
+    name: "Eastern",
+    code: "ER",
+    description: "East Anglia and eastern England",
+    color: "#9467bd",
+    major_cities: ["Cambridge", "Norwich", "Ipswich", "Peterborough"]
+  },
+  {
+    region_id: "western",
+    name: "Western",
+    code: "WR",
+    description: "Wales and western England",
+    color: "#2ca02c",
+    major_cities: ["Cardiff", "Swansea", "Bristol", "Plymouth"]
+  },
+  {
+    region_id: "southern",
+    name: "Southern",
+    code: "SR",
+    description: "South England and London commuter routes",
+    color: "#d62728",
+    major_cities: ["London", "Brighton", "Portsmouth", "Canterbury"]
+  }
+]
+
+export function RailwayMapRealBoundaries() {
+  const mapContainer = useRef<HTMLDivElement>(null)
+  const map = useRef<any>(null)
+  const [selectedRegion, setSelectedRegion] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [dataInfo, setDataInfo] = useState<any>(null)
+
+  useEffect(() => {
+    if (!mapContainer.current) return
+
+    const initializeMap = async () => {
+      try {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css'
+        document.head.appendChild(link)
+
+        const script = document.createElement('script')
+        script.src = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js'
+        script.onload = () => loadUKDataAndCreateMap()
+        script.onerror = () => {
+          setError('Failed to load mapping library')
+          setIsLoading(false)
+        }
+        document.head.appendChild(script)
+      } catch (err) {
+        setError('Failed to initialize map')
+        setIsLoading(false)
+      }
+    }
+
+    const loadUKDataAndCreateMap = async () => {
+      try {
+        console.log('Loading UK boundary data...')
+        const response = await fetch('https://raw.githubusercontent.com/martinjc/UK-GeoJSON/master/json/administrative/gb/lad.json')
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+        
+        const ukData = await response.json()
+        console.log('UK data loaded:', ukData.features?.length, 'districts')
+        
+        setDataInfo({
+          districts: ukData.features?.length || 0,
+          source: 'martinjc/UK-GeoJSON'
+        })
+
+        createMapWithRealBoundaries(ukData)
+      } catch (err) {
+        console.error('Failed to load UK data:', err)
+        setError('Failed to load UK boundary data')
+        setIsLoading(false)
+      }
+    }
+
+    const createMapWithRealBoundaries = (ukData: any) => {
+      try {
+        // @ts-ignore
+        const mapInstance = new maplibregl.Map({
+          container: mapContainer.current!,
+          style: {
+            version: 8,
+            sources: {
+              'osm': {
+                type: 'raster',
+                tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                tileSize: 256,
+                attribution: '© OpenStreetMap contributors'
+              }
+            },
+            layers: [{
+              id: 'osm-tiles',
+              type: 'raster',
+              source: 'osm'
+            }]
+          },
+          center: [-2.5, 54.0],
+          zoom: 5.5,
+          minZoom: 4,
+          maxZoom: 12,
+          maxBounds: [[-11, 49.5], [2, 61]]
+        })
+
+        // @ts-ignore
+        mapInstance.addControl(new maplibregl.NavigationControl({ showCompass: false }))
+
+        mapInstance.on('load', () => {
+          addRealUKBoundaries(mapInstance, ukData)
+        })
+
+        map.current = mapInstance
+      } catch (err) {
+        setError('Failed to create map')
+        setIsLoading(false)
+      }
+    }
+
+    const addRealUKBoundaries = (mapInstance: any, ukData: any) => {
+      try {
+        console.log('Processing UK districts...')
+        
+        const processedData = processUKDistricts(ukData)
+        
+        mapInstance.addSource('uk-districts', {
+          type: 'geojson',
+          data: processedData
+        })
+
+        mapInstance.addLayer({
+          id: 'uk-districts-fill',
+          type: 'fill',
+          source: 'uk-districts',
+          paint: {
+            'fill-color': ['get', 'railway_color'],
+            'fill-opacity': 0.5
+          }
+        })
+
+        mapInstance.addLayer({
+          id: 'uk-districts-outline',
+          type: 'line',
+          source: 'uk-districts',
+          paint: {
+            'line-color': '#ffffff',
+            'line-width': 0.5,
+            'line-opacity': 0.8
+          }
+        })
+
+        const popup = new maplibregl.Popup({
+          closeButton: false,
+          closeOnClick: false
+        })
+
+        mapInstance.on('click', 'uk-districts-fill', (e: any) => {
+          if (e.features && e.features[0]) {
+            const feature = e.features[0]
+            const regionId = feature.properties.railway_region
+            const regionData = RAILWAY_REGIONS.find(r => r.region_id === regionId)
+            
+            if (regionData) {
+              setSelectedRegion({
+                region: regionData,
+                stats: {
+                  stations: Math.floor(Math.random() * 200) + 50,
+                  projects: Math.floor(Math.random() * 20) + 5,
+                  documents: Math.floor(Math.random() * 100) + 20
+                },
+                clickedDistrict: {
+                  name: feature.properties.LAD13NM,
+                  code: feature.properties.LAD13CD
+                }
+              })
+            }
+          }
+        })
+
+        mapInstance.on('mouseenter', 'uk-districts-fill', (e: any) => {
+          mapInstance.getCanvas().style.cursor = 'pointer'
+          
+          if (e.features && e.features[0]) {
+            const feature = e.features[0]
+            popup.setLngLat(e.lngLat)
+              .setHTML(`
+                <div class="font-medium">${feature.properties.LAD13NM}</div>
+                <div class="text-sm text-gray-600">${feature.properties.railway_region_name}</div>
+              `)
+              .addTo(mapInstance)
+          }
+        })
+
+        mapInstance.on('mouseleave', 'uk-districts-fill', () => {
+          mapInstance.getCanvas().style.cursor = ''
+          popup.remove()
+        })
+
+        console.log('Successfully added real UK boundaries!')
+        setIsLoading(false)
+      } catch (err) {
+        console.error('Error adding boundaries:', err)
+        setError('Failed to process boundaries')
+        setIsLoading(false)
+      }
+    }
+
+    initializeMap()
+
+    return () => {
+      if (map.current) {
+        map.current.remove()
+      }
+    }
+  }, [])
+
+  const processUKDistricts = (ukData: any) => {
+    const processedFeatures = ukData.features.map((feature: any) => {
+      const assignedRegion = RAILWAY_REGIONS.find(region => 
+        assignDistrictToRailwayRegion(feature, region)
+      )
+
+      const railwayRegion = assignedRegion || RAILWAY_REGIONS[5]
+
+      return {
+        ...feature,
+        properties: {
+          ...feature.properties,
+          railway_region: railwayRegion.region_id,
+          railway_region_name: railwayRegion.name,
+          railway_color: railwayRegion.color,
+          railway_code: railwayRegion.code
+        }
+      }
+    })
+
+    return {
+      type: 'FeatureCollection',
+      features: processedFeatures
+    }
+  }
+
+  const assignDistrictToRailwayRegion = (district: any, region: any): boolean => {
+    const districtName = district.properties.LAD13NM?.toLowerCase() || ''
+    
+    const bbox = getBoundingBox(district.geometry)
+    const centerLat = (bbox.north + bbox.south) / 2
+    const centerLon = (bbox.east + bbox.west) / 2
+
+    switch (region.region_id) {
+      case 'scotland':
+        return centerLat > 55 || districtName.includes('scotland') ||
+               districtName.includes('edinburgh') || districtName.includes('glasgow')
+      
+      case 'london_north_eastern':
+        return (centerLat > 53 && centerLat < 55.5 && centerLon > -2.5) ||
+               districtName.includes('york') || districtName.includes('leeds') ||
+               districtName.includes('newcastle') || districtName.includes('sheffield')
+      
+      case 'london_north_western':
+        return (centerLat > 52 && centerLat < 55 && centerLon < -1.5) ||
+               districtName.includes('manchester') || districtName.includes('liverpool') ||
+               districtName.includes('birmingham') || districtName.includes('preston')
+      
+      case 'eastern':
+        return (centerLat > 51.5 && centerLat < 53 && centerLon > -0.5) ||
+               districtName.includes('cambridge') || districtName.includes('norwich') ||
+               districtName.includes('ipswich') || districtName.includes('peterborough')
+      
+      case 'western':
+        return centerLon < -2.5 || districtName.includes('wales') ||
+               districtName.includes('cardiff') || districtName.includes('bristol') ||
+               districtName.includes('plymouth') || districtName.includes('exeter')
+      
+      case 'southern':
+        return (centerLat < 52 && centerLon > -1.5) ||
+               districtName.includes('london') || districtName.includes('brighton') ||
+               districtName.includes('portsmouth') || districtName.includes('canterbury')
+      
+      default:
+        return false
+    }
+  }
+
+  const getBoundingBox = (geometry: any) => {
+    let west = Infinity, east = -Infinity, north = -Infinity, south = Infinity
+
+    const processCoordinates = (coords: any) => {
+      if (typeof coords[0] === 'number') {
+        west = Math.min(west, coords[0])
+        east = Math.max(east, coords[0])
+        south = Math.min(south, coords[1])
+        north = Math.max(north, coords[1])
+      } else {
+        coords.forEach(processCoordinates)
+      }
+    }
+
+    if (geometry.type === 'Polygon') {
+      processCoordinates(geometry.coordinates[0])
+    } else if (geometry.type === 'MultiPolygon') {
+      geometry.coordinates.forEach((polygon: any) => {
+        processCoordinates(polygon[0])
+      })
+    }
+
+    return { west, east, north, south }
+  }
+
+  const handleZoomIn = () => {
+    if (map.current) {
+      map.current.flyTo({ zoom: Math.min(12, map.current.getZoom() + 1) })
+    }
+  }
+
+  const handleZoomOut = () => {
+    if (map.current) {
+      map.current.flyTo({ zoom: Math.max(4, map.current.getZoom() - 1) })
+    }
+  }
+
+  const handleResetView = () => {
+    if (map.current) {
+      map.current.flyTo({ center: [-2.5, 54.0], zoom: 5.5 })
+    }
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96 bg-muted/30 rounded-lg">
+        <div className="text-center">
+          <p className="text-destructive mb-2">⚠️ Map Loading Error</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">🗺️ Real UK Boundaries</h1>
+          <p className="text-muted-foreground">
+            Actual district shapes from{" "}
+            <a 
+              href="https://github.com/martinjc/UK-GeoJSON" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline font-medium"
+            >
+              martinjc/UK-GeoJSON
+            </a>
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+          <Badge variant={isLoading ? "secondary" : "default"}>
+            {isLoading ? "Loading..." : "Real Shapes"}
+          </Badge>
+        </div>
+      </div>
+
+      <div className="relative">
+        <div 
+          ref={mapContainer} 
+          className="w-full rounded-lg border overflow-hidden shadow-lg"
+          style={{ height: '600px' }}
+        />
+
+        {isLoading && (
+          <div className="absolute inset-0 bg-background/90 flex items-center justify-center">
+            <div className="text-center p-6">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+              <p className="font-medium mb-2">Loading Real UK Boundaries</p>
+              <p className="text-sm text-muted-foreground">
+                Processing {dataInfo?.districts || '400+'} district boundaries...
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="absolute top-4 right-4 flex flex-col gap-2">
+          <Button size="sm" variant="outline" onClick={handleZoomIn}>
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleZoomOut}>
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleResetView}>
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="absolute bottom-4 left-4 bg-background/95 rounded-lg p-3 border shadow-sm">
+          <h4 className="font-medium mb-2 text-sm">Railway Regions</h4>
+          <div className="space-y-1">
+            {RAILWAY_REGIONS.map(region => (
+              <div key={region.region_id} className="flex items-center gap-2 text-xs">
+                <div 
+                  className="w-3 h-3 rounded" 
+                  style={{ backgroundColor: region.color }}
+                />
+                <span>{region.code}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="absolute bottom-2 right-2 bg-black/70 text-white rounded px-2 py-1 text-xs">
+          UK boundaries: © martinjc/UK-GeoJSON | Map: © OpenStreetMap
+        </div>
+      </div>
+
+      {selectedRegion && (
+        <Card className="border-l-4" style={{ borderLeftColor: selectedRegion.region.color }}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="flex items-center gap-2">
+              <div 
+                className="w-4 h-4 rounded"
+                style={{ backgroundColor: selectedRegion.region.color }}
+              />
+              {selectedRegion.region.name} ({selectedRegion.region.code})
+            </CardTitle>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setSelectedRegion(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">{selectedRegion.region.description}</p>
+            
+            {selectedRegion.clickedDistrict && (
+              <div className="mb-4 p-3 bg-muted/30 rounded">
+                <p className="font-medium text-sm">📍 Clicked District</p>
+                <p className="text-sm">{selectedRegion.clickedDistrict.name}</p>
+                <p className="text-xs text-muted-foreground">{selectedRegion.clickedDistrict.code}</p>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="text-center p-3 bg-muted/30 rounded">
+                <p className="text-2xl font-bold text-primary">{selectedRegion.stats.stations}</p>
+                <p className="text-sm text-muted-foreground">Stations</p>
+              </div>
+              <div className="text-center p-3 bg-muted/30 rounded">
+                <p className="text-2xl font-bold text-primary">{selectedRegion.stats.projects}</p>
+                <p className="text-sm text-muted-foreground">Projects</p>
+              </div>
+              <div className="text-center p-3 bg-muted/30 rounded">
+                <p className="text-2xl font-bold text-primary">{selectedRegion.stats.documents}</p>
+                <p className="text-sm text-muted-foreground">Documents</p>
+              </div>
+            </div>
+
+            <div>
+              <p className="font-semibold mb-2">🏙️ Major Cities:</p>
+              <div className="flex flex-wrap gap-1">
+                {selectedRegion.region.major_cities.map((city: string) => (
+                  <Badge key={city} variant="outline">{city}</Badge>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+} 
