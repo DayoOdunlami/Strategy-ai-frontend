@@ -118,7 +118,7 @@ const RAILWAY_REGIONS = [
   }
 ]
 
-export function RailwayMapRealBoundaries() {
+export function RailwayMapRealBoundaries({ height = 900, onRegionSelect }: { height?: number, onRegionSelect?: (region: any) => void }) {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<any>(null)
   const [selectedRegion, setSelectedRegion] = useState<any>(null)
@@ -261,7 +261,7 @@ export function RailwayMapRealBoundaries() {
             const regionData = RAILWAY_REGIONS.find(r => r.region_id === regionId)
             
             if (regionData) {
-              setSelectedRegion({
+              const regionInfo = {
                 region: regionData,
                 stats: {
                   stations: Math.floor(Math.random() * 200) + 50,
@@ -272,7 +272,9 @@ export function RailwayMapRealBoundaries() {
                   name: feature.properties.LAD13NM,
                   code: feature.properties.LAD13CD
                 }
-              })
+              }
+              setSelectedRegion(regionInfo)
+              onRegionSelect?.(regionInfo)
             }
           }
         })
@@ -441,8 +443,8 @@ export function RailwayMapRealBoundaries() {
       <div className="relative">
         <div 
           ref={mapContainer} 
-          className="w-full rounded-lg border overflow-hidden shadow-lg"
-          style={{ height: '900px' }}
+          className="w-full rounded-lg border overflow-hidden shadow-lg transition-all duration-300"
+          style={{ height: `${height}px` }}
         />
 
         {isLoading && (
@@ -492,7 +494,10 @@ export function RailwayMapRealBoundaries() {
             <Button 
               variant="ghost" 
               size="icon"
-              onClick={() => setSelectedRegion(null)}
+              onClick={() => {
+                setSelectedRegion(null)
+                onRegionSelect?.(null)
+              }}
             >
               <X className="h-4 w-4" />
             </Button>

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { Search, Filter, BarChart3, Sparkles, Map, Layers, Download, RefreshCw, RotateCcw } from "lucide-react"
+import { Search, Filter, BarChart3, Sparkles, Map, Layers, Download, RefreshCw, RotateCcw, Hash } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -41,6 +41,7 @@ export interface GeneratedInsight {
 export function MergedGeoInsights() {
   // Map state
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
+  const [selectedRegionInfo, setSelectedRegionInfo] = useState<any>(null)
   const [mapLoading, setMapLoading] = useState(true)
 
   // Insights state  
@@ -58,6 +59,21 @@ export function MergedGeoInsights() {
   // Unified state
   const [syncMode, setSyncMode] = useState(true)
   const [viewMode, setViewMode] = useState<'split' | 'map' | 'insights'>('split')
+
+  // Handle region selection from map
+  const handleRegionSelect = (regionInfo: any) => {
+    setSelectedRegionInfo(regionInfo)
+    if (regionInfo) {
+      setSelectedRegion(regionInfo.region.region_id)
+    } else {
+      setSelectedRegion(null)
+    }
+  }
+
+  // Calculate dynamic map height
+  const getMapHeight = () => {
+    return selectedRegionInfo ? 650 : 900
+  }
 
   // Auto-generate insights when region is selected in sync mode
   useEffect(() => {
@@ -280,11 +296,63 @@ export function MergedGeoInsights() {
              </CardTitle>
            </CardHeader>
            <CardContent className="p-0">
-             <div className="h-[900px] overflow-auto">
-               <RailwayMapRealBoundaries />
+             <div className="overflow-auto transition-all duration-300" style={{ height: `${getMapHeight()}px` }}>
+               <RailwayMapRealBoundaries 
+                 height={getMapHeight()} 
+                 onRegionSelect={handleRegionSelect}
+               />
              </div>
            </CardContent>
         </Card>
+
+        {/* Dynamic Region Info Panel */}
+        {selectedRegionInfo && (
+          <Card className="border-l-4 transition-all duration-300" style={{ borderLeftColor: selectedRegionInfo.region.color }}>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-4 h-4 rounded"
+                    style={{ backgroundColor: selectedRegionInfo.region.color }}
+                  />
+                  {selectedRegionInfo.region.name} ({selectedRegionInfo.region.code})
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => handleRegionSelect(null)}
+                >
+                  ✕
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-3 gap-4 mb-3">
+                <div className="text-center">
+                  <p className="text-lg font-bold text-green-600">
+                    {selectedRegionInfo.region.networkRail?.stats.routeMiles.toLocaleString() || 'N/A'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Route Miles</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-blue-600">
+                    {selectedRegionInfo.region.networkRail?.stats.stations.toLocaleString() || 'N/A'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Stations</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-orange-600">
+                    {selectedRegionInfo.stats.projects}
+                  </p>
+                  <p className="text-xs text-muted-foreground">CPC Projects</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {selectedRegionInfo.region.networkRail?.fullDescription || selectedRegionInfo.region.description}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Insights Panel */}
         <div className={`${getInsightsClasses()} space-y-6`}>
@@ -373,15 +441,74 @@ export function MergedGeoInsights() {
             )}
           </div>
 
-          {/* Quick Charts */}
+          {/* Project Density & Tags Analysis */}
           <div className="space-y-4">
-            <h3 className="font-semibold">Overview Charts</h3>
+            <h3 className="font-semibold">Network Analytics</h3>
             <div className="space-y-4">
+              {/* Project Density by Region */}
+              <Card className="p-4">
+                <div className="space-y-3">
+                  <h4 className="font-medium flex items-center">
+                    <BarChart3 className="mr-2 h-4 w-4 text-blue-600" />
+                    Project Density by Region
+                  </h4>
+                  <div className="space-y-2">
+                    {[
+                      { name: 'Southern', projects: 47, density: 'High', color: 'bg-red-500' },
+                      { name: 'Eastern', projects: 34, density: 'Medium', color: 'bg-blue-500' },
+                      { name: 'Scotland', projects: 28, density: 'Medium', color: 'bg-purple-500' },
+                      { name: 'North West & Central', projects: 31, density: 'Medium', color: 'bg-orange-500' },
+                      { name: 'Wales & Western', projects: 19, density: 'Low', color: 'bg-green-500' }
+                    ].map(region => (
+                      <div key={region.name} className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded ${region.color}`} />
+                          <span className="text-sm font-medium">{region.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">{region.projects} projects</span>
+                          <Badge variant={region.density === 'High' ? 'destructive' : region.density === 'Medium' ? 'default' : 'secondary'} className="text-xs">
+                            {region.density}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+
+              {/* Popular Tags */}
+              <Card className="p-4">
+                <div className="space-y-3">
+                  <h4 className="font-medium flex items-center">
+                    <Hash className="mr-2 h-4 w-4 text-green-600" />
+                    Popular Tags
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { tag: 'electrification', count: 127, color: 'bg-blue-100 text-blue-800' },
+                      { tag: 'accessibility', count: 89, color: 'bg-green-100 text-green-800' },
+                      { tag: 'station-upgrade', count: 76, color: 'bg-purple-100 text-purple-800' },
+                      { tag: 'safety', count: 65, color: 'bg-red-100 text-red-800' },
+                      { tag: 'capacity', count: 54, color: 'bg-orange-100 text-orange-800' },
+                      { tag: 'digitalization', count: 43, color: 'bg-indigo-100 text-indigo-800' },
+                      { tag: 'sustainability', count: 38, color: 'bg-emerald-100 text-emerald-800' },
+                      { tag: 'freight', count: 29, color: 'bg-amber-100 text-amber-800' }
+                    ].map(item => (
+                      <Badge key={item.tag} className={`${item.color} text-xs px-2 py-1`} variant="secondary">
+                        #{item.tag} ({item.count})
+                      </Badge>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Based on {159} documents and {89} active projects across all regions
+                  </p>
+                </div>
+              </Card>
+
+              {/* Quick Overview */}
               <Card className="p-4">
                 <MetricsOverview />
-              </Card>
-              <Card className="p-4">
-                <RegionalActivityChart />
               </Card>
             </div>
           </div>
