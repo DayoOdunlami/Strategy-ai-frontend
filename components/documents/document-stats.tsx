@@ -19,12 +19,17 @@ export function DocumentStats() {
     ready: 0,
     errors: 0,
   })
-  const { useSampleData, isHydrated } = useDemoMode()
+  const { useSampleData, isHydrated, isDemo } = useDemoMode()
 
   useEffect(() => {
-    if (useSampleData) {
+    console.log('DocumentStats: useSampleData =', useSampleData, 'isHydrated =', isHydrated, 'isDemo =', isDemo)
+    
+    if (useSampleData && isHydrated) {
       // Calculate stats from demo data
+      console.log('Demo documents:', DEMO_DATA.documents)
+      
       const demoStats = DEMO_DATA.documents.reduce((acc, doc) => {
+        console.log('Processing doc:', doc.title, 'status:', doc.status)
         acc.total += 1
         if (doc.status === 'processing') acc.processing += 1
         else if (doc.status === 'ready') acc.ready += 1
@@ -32,9 +37,11 @@ export function DocumentStats() {
         return acc
       }, { total: 0, processing: 0, ready: 0, errors: 0 })
       
+      console.log('Calculated demo stats:', demoStats)
       setStats(demoStats)
     } else {
       // Mock data for non-demo mode - in real app, fetch from API
+      console.log('Using zero stats (non-demo mode)')
       setStats({
         total: 0, // Will show 0 until Supabase integration
         processing: 0,
@@ -42,7 +49,7 @@ export function DocumentStats() {
         errors: 0,
       })
     }
-  }, [useSampleData, isHydrated])
+  }, [useSampleData, isHydrated, isDemo])
 
   const statCards = [
     {
