@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Save, Plug, Database, Cloud, RefreshCw, Eye, EyeOff } from "lucide-react"
+import { Save, Plug, Database, Cloud, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { useDemoMode } from "@/lib/demo-mode"
 
 // API client for backend health checks
 const BACKEND_URL = 'https://web-production-6045b.up.railway.app'
@@ -51,7 +50,6 @@ const healthAPI = {
 
 export function IntegrationSettings() {
   const { toast } = useToast()
-  const { config: demoConfig, toggleDemoMode, toggleBanner, isDemo, showBanner } = useDemoMode()
   const [isLoading, setIsLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   
@@ -218,59 +216,6 @@ export function IntegrationSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Demo Mode Banner */}
-      {isDemo && showBanner && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Eye className="h-5 w-5 text-blue-600" />
-              <div>
-                <h3 className="font-medium text-blue-900">Demo Mode Active</h3>
-                <p className="text-sm text-blue-700">
-                  You're viewing sample data. Switch to live mode to see real integration data.
-                </p>
-              </div>
-            </div>
-            <Button variant="outline" size="sm" onClick={toggleBanner}>
-              Dismiss
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Demo Mode Toggle */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {isDemo ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
-            Demo Mode
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Enable Demo Mode</Label>
-              <p className="text-sm text-muted-foreground">
-                Show sample data when real data is empty. Perfect for showcasing features.
-              </p>
-            </div>
-            <Switch
-              checked={isDemo}
-              onCheckedChange={toggleDemoMode}
-            />
-          </div>
-          
-          {isDemo && (
-            <div className="bg-muted/50 rounded-lg p-3">
-              <p className="text-sm text-muted-foreground">
-                <strong>Demo mode is active.</strong> Sample data will be shown across the platform 
-                when real data is empty, giving new users a rich experience to explore features.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Status Header */}
       <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
         <div>

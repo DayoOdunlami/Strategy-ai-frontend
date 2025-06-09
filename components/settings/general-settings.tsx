@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Save, Globe, Palette, Clock } from "lucide-react"
+import { Save, Globe, Palette, Clock, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { useDemoMode } from "@/lib/demo-mode"
 
 export function GeneralSettings() {
   const { toast } = useToast()
+  const { config: demoConfig, toggleDemoMode, isDemo } = useDemoMode()
   const [settings, setSettings] = useState({
     platformName: "Strategy AI",
     platformDescription: "AI-powered document management and analysis platform for the transportation sector",
@@ -214,6 +216,20 @@ export function GeneralSettings() {
           </div>
 
           <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="flex items-center gap-2">
+                  {isDemo ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                  Demo Mode
+                </Label>
+                <p className="text-sm text-muted-foreground">Show sample data when real data is empty. Perfect for showcasing features.</p>
+              </div>
+              <Switch
+                checked={isDemo}
+                onCheckedChange={toggleDemoMode}
+              />
+            </div>
+
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Maintenance Mode</Label>
