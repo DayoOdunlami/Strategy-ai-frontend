@@ -45,6 +45,11 @@ export function Sidebar() {
           href: "/insights",
           icon: <Lightbulb className="h-5 w-5" />,
         },
+        {
+          title: "Geo Analytics",
+          href: "/geo-insights",
+          icon: <BarChart3 className="h-5 w-5" />,
+        },
       ],
     },
     {
