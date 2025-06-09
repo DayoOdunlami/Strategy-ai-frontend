@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast"
 const healthAPI = {
   checkSystemHealth: async () => {
     try {
-      const response = await fetch('/api/health', {
+      const response = await fetch('/health', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       })
@@ -31,7 +31,7 @@ const healthAPI = {
 
   checkAIStatus: async () => {
     try {
-      const response = await fetch('/api/ai/status', {
+      const response = await fetch('/ai/status', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       })
