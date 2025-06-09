@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Save, Plug, Database, Cloud } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Save, Plug, Database, Cloud, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,45 +11,150 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 
+// API client for backend health checks
+const healthAPI = {
+  checkSystemHealth: async () => {
+    try {
+      const response = await fetch('/api/health', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      if (response.ok) {
+        return await response.json()
+      }
+      return null
+    } catch (error) {
+      console.warn('Health check failed:', error)
+      return null
+    }
+  },
+
+  checkAIStatus: async () => {
+    try {
+      const response = await fetch('/api/ai/status', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      if (response.ok) {
+        return await response.json()
+      }
+      return null
+    } catch (error) {
+      console.warn('AI status check failed:', error)
+      return null
+    }
+  }
+}
+
 export function IntegrationSettings() {
   const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  
+  // Default fallback state (same as before)
   const [integrations, setIntegrations] = useState({
     openai: {
       enabled: true,
       apiKey: "sk-****************************",
       model: "gpt-4",
-      status: "connected",
+      status: "unknown", // Start as unknown, will update from API
     },
     pinecone: {
       enabled: true,
       apiKey: "pc-****************************",
       environment: "us-west1-gcp",
       indexName: "strategy-ai-docs",
-      status: "connected",
+      status: "unknown",
     },
     supabase: {
       enabled: false,
       url: "",
       apiKey: "",
-      status: "disconnected",
+      status: "unknown",
     },
     neon: {
       enabled: true,
       connectionString: "postgresql://****************************",
-      status: "connected",
+      status: "unknown",
     },
     vercelBlob: {
       enabled: true,
       token: "vercel_blob_****************************",
-      status: "connected",
+      status: "unknown",
     },
     networkRailAPI: {
       enabled: true,
       apiKey: "nr-****************************",
       baseUrl: "https://api.networkrail.co.uk",
-      status: "connected",
+      status: "unknown",
     },
   })
+
+  // Fetch live status from backend
+  const fetchLiveStatus = async () => {
+    setIsLoading(true)
+    try {
+      // Get overall system health
+      const healthData = await healthAPI.checkSystemHealth()
+      const aiData = await healthAPI.checkAIStatus()
+
+      if (healthData) {
+        // Update statuses based on backend response
+        setIntegrations(prev => ({
+          ...prev,
+          pinecone: {
+            ...prev.pinecone,
+            status: healthData.services?.vector_store === "connected" ? "connected" : "disconnected"
+          },
+          neon: {
+            ...prev.neon,
+            status: healthData.services?.database === "connected" ? "connected" : "disconnected"
+          },
+          // Add more mappings as backend provides them
+        }))
+      }
+
+      if (aiData) {
+        setIntegrations(prev => ({
+          ...prev,
+          openai: {
+            ...prev.openai,
+            status: aiData.ai_enabled && !aiData.demo_mode ? "connected" : "disconnected"
+          }
+        }))
+      }
+
+      setLastUpdated(new Date())
+      
+      if (healthData || aiData) {
+        toast({
+          title: "Status updated",
+          description: "Integration statuses refreshed from backend",
+        })
+      } else {
+        toast({
+          title: "Backend unavailable",
+          description: "Using cached status - backend may be down",
+          variant: "destructive"
+        })
+      }
+      
+    } catch (error) {
+      console.error('Failed to fetch live status:', error)
+      toast({
+        title: "Update failed",
+        description: "Could not reach backend - showing last known status",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Load live status on component mount
+  useEffect(() => {
+    fetchLiveStatus()
+  }, [])
 
   const handleSave = () => {
     toast({
@@ -80,27 +185,45 @@ export function IntegrationSettings() {
         return <Badge className="bg-red-100 text-red-800">Disconnected</Badge>
       case "error":
         return <Badge variant="destructive">Error</Badge>
+      case "unknown":
+        return <Badge variant="outline">Unknown</Badge>
       default:
         return <Badge variant="outline">Unknown</Badge>
     }
   }
 
-  const testConnection = (service: string) => {
+  const testConnection = async (service: string) => {
     toast({
       title: "Testing connection",
       description: `Testing connection to ${service}...`,
     })
-    // Simulate connection test
-    setTimeout(() => {
-      toast({
-        title: "Connection successful",
-        description: `Successfully connected to ${service}`,
-      })
-    }, 2000)
+    
+    // For now, just refresh the overall status
+    // Later, this could call specific service test endpoints
+    await fetchLiveStatus()
   }
 
   return (
     <div className="space-y-6">
+      {/* Status Header */}
+      <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+        <div>
+          <h3 className="font-medium">Integration Status</h3>
+          <p className="text-sm text-muted-foreground">
+            {lastUpdated ? `Last updated: ${lastUpdated.toLocaleTimeString()}` : 'Loading status...'}
+          </p>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={fetchLiveStatus}
+          disabled={isLoading}
+        >
+          <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh Status
+        </Button>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
