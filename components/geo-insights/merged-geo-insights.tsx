@@ -256,29 +256,34 @@ export function MergedGeoInsights() {
       <div className={`grid ${getGridClasses()} gap-6`}>
         {/* Map Panel */}
         <Card className={`${getMapClasses()} overflow-hidden`}>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center">
-                <Map className="mr-2 h-5 w-5" />
-                Interactive Railway Map
-              </span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Layers className="mr-2 h-4 w-4" />
-                  Layers
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Download className="mr-2 h-4 w-4" />
-                  Export
-                </Button>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="h-[600px]">
-              <RailwayMapRealBoundaries />
-            </div>
-          </CardContent>
+                     <CardHeader className="pb-3">
+             <CardTitle className="flex items-center justify-between">
+               <div className="flex flex-col">
+                 <span className="flex items-center text-lg font-semibold">
+                   <Map className="mr-2 h-5 w-5 text-blue-600" />
+                   🗺️ Railway Regions
+                 </span>
+                 <span className="text-sm text-muted-foreground font-normal ml-7">
+                   Click regions to explore Network Rail data and generate insights
+                 </span>
+               </div>
+               <div className="flex gap-2">
+                 <Button variant="outline" size="sm">
+                   <Layers className="mr-2 h-4 w-4" />
+                   Layers
+                 </Button>
+                 <Button variant="outline" size="sm">
+                   <Download className="mr-2 h-4 w-4" />
+                   Export
+                 </Button>
+               </div>
+             </CardTitle>
+           </CardHeader>
+           <CardContent className="p-0">
+             <div className="h-[850px]">
+               <RailwayMapRealBoundaries />
+             </div>
+           </CardContent>
         </Card>
 
         {/* Insights Panel */}
