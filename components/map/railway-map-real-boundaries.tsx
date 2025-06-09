@@ -14,7 +14,19 @@ const RAILWAY_REGIONS = [
     code: "SC",
     description: "Scottish railway network",
     color: "#8c564b",
-    major_cities: ["Glasgow", "Edinburgh", "Aberdeen", "Dundee"]
+    major_cities: ["Glasgow", "Edinburgh", "Aberdeen", "Dundee"],
+    // Network Rail official data
+    networkRail: {
+      director: "Liam Sumpter",
+      fullDescription: "Oversees railway infrastructure across Scotland, including the scenic Highlands, Glasgow and Edinburgh.",
+      routes: ["Scotland"],
+      stats: {
+        routeMiles: 2700,
+        stations: 350,
+        employees: "5,000+"
+      },
+      url: "https://www.networkrail.co.uk/running-the-railway/our-regions/scotland/"
+    }
   },
   {
     region_id: "london_north_eastern",
@@ -30,7 +42,19 @@ const RAILWAY_REGIONS = [
     code: "LNW",
     description: "West Coast and North West England",
     color: "#ff7f0e",
-    major_cities: ["Manchester", "Liverpool", "Birmingham", "Preston"]
+    major_cities: ["Manchester", "Liverpool", "Birmingham", "Preston"],
+    // Network Rail official data
+    networkRail: {
+      director: "Jake Kelly",
+      fullDescription: "Known as the 'Backbone of Britain' – connecting major cities like London, Birmingham, Liverpool and Manchester via the West Coast Main Line.",
+      routes: ["North West", "Central", "West Coast Mainline South"],
+      stats: {
+        routeMiles: 4200,
+        stations: 580,
+        employees: "11,000+"
+      },
+      url: "https://www.networkrail.co.uk/running-the-railway/our-regions/north-west-and-central/"
+    }
   },
   {
     region_id: "eastern",
@@ -38,7 +62,19 @@ const RAILWAY_REGIONS = [
     code: "ER",
     description: "East Anglia and eastern England",
     color: "#9467bd",
-    major_cities: ["Cambridge", "Norwich", "Ipswich", "Peterborough"]
+    major_cities: ["Cambridge", "Norwich", "Ipswich", "Peterborough"],
+    // Network Rail official data
+    networkRail: {
+      director: "Jason Hamilton",
+      fullDescription: "Covers key economic hubs including London, the East Midlands, and Yorkshire. Includes the East Coast Main Line.",
+      routes: ["Anglia", "East Midlands", "North & East"],
+      stats: {
+        routeMiles: 4000,
+        stations: 700,
+        employees: "14,000+"
+      },
+      url: "https://www.networkrail.co.uk/running-the-railway/our-regions/eastern/"
+    }
   },
   {
     region_id: "western",
@@ -46,7 +82,19 @@ const RAILWAY_REGIONS = [
     code: "WR",
     description: "Wales and western England",
     color: "#2ca02c",
-    major_cities: ["Cardiff", "Swansea", "Bristol", "Plymouth"]
+    major_cities: ["Cardiff", "Swansea", "Bristol", "Plymouth"],
+    // Network Rail official data
+    networkRail: {
+      director: "Michelle Handforth",
+      fullDescription: "Links London to South Wales and the South West of England. Covers major hubs like Bristol and Cardiff.",
+      routes: ["Western", "Wales"],
+      stats: {
+        routeMiles: 3700,
+        stations: 400,
+        employees: "8,000+"
+      },
+      url: "https://www.networkrail.co.uk/running-the-railway/our-regions/wales-and-western/"
+    }
   },
   {
     region_id: "southern",
@@ -54,7 +102,19 @@ const RAILWAY_REGIONS = [
     code: "SR",
     description: "South England and London commuter routes",
     color: "#d62728",
-    major_cities: ["London", "Brighton", "Portsmouth", "Canterbury"]
+    major_cities: ["London", "Brighton", "Portsmouth", "Canterbury"],
+    // Network Rail official data
+    networkRail: {
+      director: "Ellie Burrows",
+      fullDescription: "The busiest and most densely populated part of the network. Includes London commuter routes and the South West Main Line.",
+      routes: ["Kent", "Sussex", "Wessex"],
+      stats: {
+        routeMiles: 3000,
+        stations: 800,
+        employees: "13,000+"
+      },
+      url: "https://www.networkrail.co.uk/running-the-railway/our-regions/southern/"
+    }
   }
 ]
 
