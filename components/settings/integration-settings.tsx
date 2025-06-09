@@ -69,7 +69,7 @@ export function IntegrationSettings() {
       status: "unknown",
     },
     supabase: {
-      enabled: false,
+      enabled: true,
       url: "",
       apiKey: "",
       status: "unknown",
@@ -115,6 +115,11 @@ export function IntegrationSettings() {
           openai: {
             ...prev.openai,
             status: (healthData.services?.ai_service === "ready" || healthData.services?.ai_service === "connected") ? "connected" : "disconnected"
+          },
+          supabase: {
+            ...prev.supabase,
+            status: healthData.services?.supabase === "connected" ? "connected" : 
+                   healthData.services?.supabase === "not_configured" ? "unknown" : "disconnected"
           },
           // Add more mappings as backend provides them
         }))
@@ -428,9 +433,7 @@ export function IntegrationSettings() {
               </div>
             )}
 
-            <Button variant="outline" size="sm" onClick={() => testConnection("Supabase")}>
-              Test Connection
-            </Button>
+
           </div>
         </CardContent>
       </Card>
