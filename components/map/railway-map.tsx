@@ -10,8 +10,6 @@ import { MapContainer } from "@/components/map/map-container"
 import { RegionPanel } from "@/components/map/region-panel"
 import { StationDetails } from "@/components/map/station-details"
 import { MapControls } from "@/components/map/map-controls"
-import { RailwayMapV2 } from "./railway-map-v2"
-import { RailwayMapAdvanced } from "./railway-map-advanced"
 import { RailwayMapRealBoundaries } from "./railway-map-real-boundaries"
 
 export interface RailwayRegion {
@@ -50,7 +48,7 @@ export function RailwayMap() {
   const [selectedStation, setSelectedStation] = useState<Station | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [filterRegion, setFilterRegion] = useState<string>("all")
-  const [mapType, setMapType] = useState<"classic" | "interactive" | "advanced" | "real">("classic")
+  const [mapType, setMapType] = useState<"classic" | "real">("classic")
   const [showLayers, setShowLayers] = useState({
     regions: true,
     stations: true,
@@ -191,8 +189,6 @@ export function RailwayMap() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="classic">🗺️ Classic Map</SelectItem>
-              <SelectItem value="interactive">🌐 Interactive Map</SelectItem>
-              <SelectItem value="advanced">🚀 Advanced (UK-GeoJSON)</SelectItem>
               <SelectItem value="real">✨ Real UK Boundaries</SelectItem>
             </SelectContent>
           </Select>
@@ -276,10 +272,6 @@ export function RailwayMap() {
         <div className="lg:col-span-2">
           {mapType === "real" ? (
             <RailwayMapRealBoundaries />
-          ) : mapType === "advanced" ? (
-            <RailwayMapAdvanced />
-          ) : mapType === "interactive" ? (
-            <RailwayMapV2 />
           ) : (
             <Card className="h-[600px]">
               <CardContent className="p-0 h-full">
