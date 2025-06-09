@@ -123,7 +123,7 @@ export function IntegrationSettings() {
           ...prev,
           openai: {
             ...prev.openai,
-            status: aiData.ai_enabled && !aiData.demo_mode ? "connected" : "disconnected"
+            status: (aiData.ai_enabled && !aiData.demo_mode) || aiData.status === "operational" ? "connected" : "disconnected"
           }
         }))
       }
