@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { FileText, Clock, CheckCircle, AlertTriangle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useDemoMode, DEMO_DATA } from "@/lib/demo-mode"
 
 interface DocumentStatsData {
   total: number
@@ -18,16 +19,30 @@ export function DocumentStats() {
     ready: 0,
     errors: 0,
   })
+  const { useSampleData, isHydrated } = useDemoMode()
 
   useEffect(() => {
-    // Mock data - in real app, fetch from API
-    setStats({
-      total: 247,
-      processing: 3,
-      ready: 241,
-      errors: 3,
-    })
-  }, [])
+    if (useSampleData) {
+      // Calculate stats from demo data
+      const demoStats = DEMO_DATA.documents.reduce((acc, doc) => {
+        acc.total += 1
+        if (doc.status === 'processing') acc.processing += 1
+        else if (doc.status === 'ready') acc.ready += 1
+        else if (doc.status === 'error') acc.errors += 1
+        return acc
+      }, { total: 0, processing: 0, ready: 0, errors: 0 })
+      
+      setStats(demoStats)
+    } else {
+      // Mock data for non-demo mode - in real app, fetch from API
+      setStats({
+        total: 0, // Will show 0 until Supabase integration
+        processing: 0,
+        ready: 0,
+        errors: 0,
+      })
+    }
+  }, [useSampleData, isHydrated])
 
   const statCards = [
     {
