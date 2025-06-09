@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MapContainer } from "@/components/map/map-container"
+
 import { RegionPanel } from "@/components/map/region-panel"
 import { StationDetails } from "@/components/map/station-details"
 import { MapControls } from "@/components/map/map-controls"
@@ -48,7 +48,7 @@ export function RailwayMap() {
   const [selectedStation, setSelectedStation] = useState<Station | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [filterRegion, setFilterRegion] = useState<string>("all")
-  const [mapType, setMapType] = useState<"classic" | "real">("classic")
+
   const [showLayers, setShowLayers] = useState({
     regions: true,
     stations: true,
@@ -183,15 +183,6 @@ export function RailwayMap() {
           <p className="text-muted-foreground">Interactive UK railway network with project information</p>
         </div>
         <div className="flex gap-2">
-          <Select value={mapType} onValueChange={(value) => setMapType(value as any)}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="classic">🗺️ Classic Map</SelectItem>
-              <SelectItem value="real">✨ Real UK Boundaries</SelectItem>
-            </SelectContent>
-          </Select>
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
             Export Data
@@ -270,23 +261,9 @@ export function RailwayMap() {
 
         {/* Main Map */}
         <div className="lg:col-span-2">
-          {mapType === "real" ? (
+          <div className="h-[800px]">
             <RailwayMapRealBoundaries />
-          ) : (
-            <Card className="h-[600px]">
-              <CardContent className="p-0 h-full">
-                <MapContainer
-                  regions={regions}
-                  stations={filteredStations}
-                  selectedRegion={selectedRegion}
-                  selectedStation={selectedStation}
-                  onRegionSelect={setSelectedRegion}
-                  onStationSelect={setSelectedStation}
-                  showLayers={showLayers}
-                />
-              </CardContent>
-            </Card>
-          )}
+          </div>
         </div>
 
         {/* Side Panel */}
