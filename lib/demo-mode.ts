@@ -102,19 +102,18 @@ export const DEMO_DATA = {
 // Helper to check if we're in browser environment
 const isBrowser = typeof window !== 'undefined'
 
-// Demo mode hook with SSR safety
+// Demo mode hook with better reactivity
 export function useDemoMode() {
-  // Default config for SSR (server-side rendering)
-  const defaultConfig: DemoModeConfig = {
+  // Start with a reasonable default that works during SSR
+  const [config, setConfig] = useState<DemoModeConfig>({
     enabled: true, // Default to enabled for new users
     showBanner: true,
     sampleDataEnabled: true
-  }
+  })
+  
+  const [mounted, setMounted] = useState(false)
 
-  const [config, setConfig] = useState<DemoModeConfig>(defaultConfig)
-  const [isHydrated, setIsHydrated] = useState(false)
-
-  // Hydrate from localStorage after component mounts (client-side only)
+  // Load from localStorage on mount (client-side only)
   useEffect(() => {
     if (isBrowser) {
       try {
@@ -125,25 +124,30 @@ export function useDemoMode() {
         }
       } catch (error) {
         console.warn('Failed to load demo mode config from localStorage:', error)
-        // Keep default config if localStorage fails
       }
-      setIsHydrated(true)
+      setMounted(true)
     }
   }, [])
 
-  // Save to localStorage when config changes (client-side only)
+  // Save to localStorage when config changes (after mount)
   useEffect(() => {
-    if (isBrowser && isHydrated) {
+    if (mounted && isBrowser) {
       try {
         localStorage.setItem('demo-mode-config', JSON.stringify(config))
+        console.log('Demo mode config saved:', config)
       } catch (error) {
         console.warn('Failed to save demo mode config to localStorage:', error)
       }
     }
-  }, [config, isHydrated])
+  }, [config, mounted])
 
   const toggleDemoMode = () => {
-    setConfig(prev => ({ ...prev, enabled: !prev.enabled }))
+    console.log('Toggling demo mode from', config.enabled, 'to', !config.enabled)
+    setConfig(prev => {
+      const newConfig = { ...prev, enabled: !prev.enabled }
+      console.log('New demo config:', newConfig)
+      return newConfig
+    })
   }
 
   const toggleBanner = () => {
@@ -158,16 +162,27 @@ export function useDemoMode() {
     setConfig(prev => ({ ...prev, sampleDataEnabled: false }))
   }
 
+  // Computed values for easier consumption
+  const isDemo = config.enabled
+  const useSampleData = config.enabled && config.sampleDataEnabled
+  
+  console.log('useDemoMode state:', { 
+    isDemo, 
+    useSampleData, 
+    mounted, 
+    config 
+  })
+
   return {
     config,
     toggleDemoMode,
     toggleBanner,
     enableSampleData,
     disableSampleData,
-    isDemo: config.enabled,
+    isDemo,
     showBanner: config.showBanner,
-    useSampleData: config.enabled && config.sampleDataEnabled,
-    isHydrated // Useful for avoiding hydration mismatches
+    useSampleData,
+    isHydrated: mounted // For compatibility
   }
 }
 
