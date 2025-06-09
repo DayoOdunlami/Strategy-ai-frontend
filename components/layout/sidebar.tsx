@@ -143,39 +143,51 @@ export function Sidebar() {
 
               {/* Section Items with Staggered Animation */}
               <div className="space-y-1">
-                {section.items.map((item, itemIndex) => (
-                  <Button
-                    key={item.href}
-                    variant={pathname === item.href ? "secondary" : "ghost"}
-                    className={cn(
-                      "w-full justify-start gap-3 h-11 transition-all duration-300 group relative",
-                      pathname === item.href && "bg-secondary text-secondary-foreground shadow-sm",
-                      !isExpanded && "px-2 justify-center",
-                      isExpanded && `animate-in slide-in-from-left-2 duration-300 delay-${itemIndex * 50}`,
-                    )}
-                    asChild
-                  >
-                    <Link href={item.href}>
-                      <div className="relative">
-                        {item.icon}
-                        {pathname === item.href && !isExpanded && (
-                          <div className="absolute -right-1 -top-1 w-2 h-2 bg-secondary-foreground rounded-full" />
-                        )}
-                      </div>
-                      <span
-                        className={cn(
-                          "transition-all duration-500",
-                          isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0 overflow-hidden",
-                        )}
-                      >
-                        {item.title}
-                      </span>
-                      {isExpanded && (
-                        <ChevronRight className="ml-auto h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                {section.items.map((item, itemIndex) => {
+                  // Check if this is a Geo Analytics sub-item for visual grouping
+                  const isGeoSubItem = (item.title === "Railway Map" || item.title === "Insight Explorer")
+                  
+                  return (
+                    <Button
+                      key={item.href}
+                      variant={pathname === item.href ? "secondary" : "ghost"}
+                      className={cn(
+                        "w-full justify-start gap-3 h-11 transition-all duration-300 group relative",
+                        pathname === item.href && "bg-secondary text-secondary-foreground shadow-sm",
+                        !isExpanded && "px-2 justify-center",
+                        isExpanded && `animate-in slide-in-from-left-2 duration-300 delay-${itemIndex * 50}`,
+                        // Visual grouping for Geo Analytics sub-items
+                        isGeoSubItem && isExpanded && "ml-4 h-9 text-sm bg-muted/30 hover:bg-muted/50",
+                        isGeoSubItem && !isExpanded && "ml-1"
                       )}
-                    </Link>
-                  </Button>
-                ))}
+                      asChild
+                    >
+                      <Link href={item.href}>
+                        <div className="relative">
+                          {/* Add connecting line for visual grouping */}
+                          {isGeoSubItem && isExpanded && (
+                            <div className="absolute -left-4 top-1/2 w-3 h-px bg-border" />
+                          )}
+                          {item.icon}
+                          {pathname === item.href && !isExpanded && (
+                            <div className="absolute -right-1 -top-1 w-2 h-2 bg-secondary-foreground rounded-full" />
+                          )}
+                        </div>
+                        <span
+                          className={cn(
+                            "transition-all duration-500",
+                            isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0 overflow-hidden",
+                          )}
+                        >
+                          {item.title}
+                        </span>
+                        {isExpanded && (
+                          <ChevronRight className="ml-auto h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )}
+                      </Link>
+                    </Button>
+                  )
+                })}
               </div>
             </div>
           ))}
