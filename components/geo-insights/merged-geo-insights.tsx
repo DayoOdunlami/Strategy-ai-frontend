@@ -327,6 +327,15 @@ export function MergedGeoInsights() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
+              {/* Director Information */}
+              {selectedRegionInfo.region.networkRail?.director && (
+                <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
+                  <p className="font-semibold text-blue-700 dark:text-blue-300 text-sm mb-1">👤 Regional Director</p>
+                  <p className="text-blue-600 dark:text-blue-400 text-sm">{selectedRegionInfo.region.networkRail.director}</p>
+                </div>
+              )}
+
+              {/* Statistics Grid */}
               <div className="grid grid-cols-3 gap-4 mb-3">
                 <div className="text-center">
                   <p className="text-lg font-bold text-green-600">
@@ -347,9 +356,35 @@ export function MergedGeoInsights() {
                   <p className="text-xs text-muted-foreground">CPC Projects</p>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground">
+
+              {/* Description */}
+              <p className="text-sm text-muted-foreground mb-3">
                 {selectedRegionInfo.region.networkRail?.fullDescription || selectedRegionInfo.region.description}
               </p>
+
+              {/* Railway Routes */}
+              {selectedRegionInfo.region.networkRail?.routes && (
+                <div className="mb-3">
+                  <p className="font-semibold mb-2 text-sm">🚂 Railway Routes:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedRegionInfo.region.networkRail.routes.map((route: string) => (
+                      <Badge key={route} variant="outline" className="text-xs">{route}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Network Rail Link */}
+              {selectedRegionInfo.region.networkRail?.url && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="w-full mt-2" 
+                  onClick={() => window.open(selectedRegionInfo.region.networkRail.url, '_blank')}
+                >
+                  🔗 View on Network Rail
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
