@@ -9,62 +9,62 @@ interface MetricsOverviewProps {
 }
 
 export function MetricsOverview({ timeRange, analytics }: MetricsOverviewProps) {
-  // Use provided analytics data or fallback to static data
+  // Use provided analytics data or show zeros if no data available
   const metricsData = analytics || {
-    totalQueries: 2847,
-    totalDocuments: 247,
-    activeUsers: 89,
-    averageRating: 4.2,
-    responseTime: 1.2,
-    systemUptime: 99.8
+    totalQueries: 0,
+    totalDocuments: 0,
+    activeUsers: 0,
+    averageRating: 0,
+    responseTime: 0,
+    systemUptime: 0
   }
 
   const metrics = [
     {
       title: "AI Queries",
-      value: metricsData.totalQueries?.toLocaleString() || "2,847",
-      change: "+23%",
-      trend: "up",
+      value: metricsData.totalQueries?.toLocaleString() || "0",
+      change: analytics ? "+23%" : "N/A",
+      trend: analytics ? "up" : "none",
       icon: MessageSquare,
       description: "Total AI queries processed",
     },
     {
-      title: "Documents Processed",
-      value: metricsData.totalDocuments?.toLocaleString() || "247",
-      change: "+12%",
-      trend: "up",
+      title: "Documents Processed", 
+      value: metricsData.totalDocuments?.toLocaleString() || "0",
+      change: analytics ? "+12%" : "N/A",
+      trend: analytics ? "up" : "none",
       icon: FileText,
       description: "Documents uploaded and indexed",
     },
     {
       title: "Active Users",
-      value: metricsData.activeUsers?.toLocaleString() || "89",
-      change: "+8%",
-      trend: "up",
+      value: metricsData.activeUsers?.toLocaleString() || "0",
+      change: analytics ? "+8%" : "N/A",
+      trend: analytics ? "up" : "none",
       icon: Users,
       description: "Unique users this period",
     },
     {
       title: "Avg Response Rating",
-      value: metricsData.averageRating?.toFixed(1) || "4.2",
-      change: "+0.3",
-      trend: "up",
+      value: metricsData.averageRating ? metricsData.averageRating.toFixed(1) : "0.0",
+      change: analytics ? "+0.3" : "N/A",
+      trend: analytics ? "up" : "none",
       icon: Star,
       description: "Average user satisfaction rating",
     },
     {
       title: "Response Time",
-      value: `${metricsData.responseTime?.toFixed(1) || "1.2"}s`,
-      change: "-0.3s",
-      trend: "up",
+      value: metricsData.responseTime ? `${metricsData.responseTime.toFixed(1)}s` : "0.0s",
+      change: analytics ? "-0.3s" : "N/A",
+      trend: analytics ? "up" : "none",
       icon: TrendingUp,
       description: "Average AI response time",
     },
     {
       title: "System Uptime",
-      value: `${metricsData.systemUptime?.toFixed(1) || "99.8"}%`,
-      change: "stable",
-      trend: "stable",
+      value: metricsData.systemUptime ? `${metricsData.systemUptime.toFixed(1)}%` : "0.0%",
+      change: analytics ? "stable" : "N/A",
+      trend: analytics ? "stable" : "none",
       icon: TrendingUp,
       description: "System availability",
     },

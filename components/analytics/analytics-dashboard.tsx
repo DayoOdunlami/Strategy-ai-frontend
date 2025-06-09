@@ -43,20 +43,28 @@ export function AnalyticsDashboard() {
           setLoading(false)
         }, 500) // Simulate loading delay
       } else {
-        // Use real API data
-        const [systemAnalytics, feedbackAnalytics] = await Promise.all([
-          apiClient.admin.getAnalytics(),
-          apiClient.admin.getFeedback(),
-        ])
+        // Use real API data or set null when no backend is available
+        try {
+          const [systemAnalytics, feedbackAnalytics] = await Promise.all([
+            apiClient.admin.getAnalytics(),
+            apiClient.admin.getFeedback(),
+          ])
 
-        setAnalytics({
-          system: systemAnalytics,
-          feedback: feedbackAnalytics,
-        })
+          setAnalytics({
+            system: systemAnalytics,
+            feedback: feedbackAnalytics,
+          })
+        } catch (apiError) {
+          console.warn('API not available, showing empty state:', apiError)
+          // Set analytics to null so components show zeros
+          setAnalytics(null)
+        }
         setLoading(false)
       }
     } catch (error) {
       console.error("Failed to load analytics:", error)
+      // Set analytics to null for empty state
+      setAnalytics(null)
       setLoading(false)
     }
   }
