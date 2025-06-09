@@ -17,6 +17,7 @@ import apiClient, { type DocumentFilters as Filters, type Sector, type UseCase }
 import Link from "next/link"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BulkEditPanel } from "@/components/documents/bulk-edit-panel"
+import { useDemoMode, DEMO_DATA } from "@/lib/demo-mode"
 
 interface Document {
   id: string
@@ -59,30 +60,51 @@ export function DocumentManagement() {
     tags: "",
   })
   const [csvImportOpen, setCsvImportOpen] = useState(false)
+  const { useSampleData, isHydrated } = useDemoMode()
 
   useEffect(() => {
     loadDocuments()
-  }, [filters, searchQuery])
+  }, [filters, searchQuery, useSampleData, isHydrated])
 
   const loadDocuments = async () => {
     setLoading(true)
     try {
-      const response = await apiClient.documents.list({
-        ...filters,
-        search: searchQuery,
-      })
+      if (useSampleData) {
+        // Use demo data when demo mode is enabled
+        setTimeout(() => {
+          const demoDocuments = DEMO_DATA.documents.map(doc => ({
+            id: doc.id,
+            title: doc.title,
+            sector: doc.sector.toLowerCase() as Sector,
+            useCases: [doc.use_case.toLowerCase() as UseCase],
+            source: doc.metadata.source,
+            date: new Date(doc.created_at).toLocaleDateString(),
+            status: doc.status as "processing" | "ready" | "error",
+            fileType: "PDF",
+            fileSize: "2.4 MB",
+          }))
+          setDocuments(demoDocuments)
+          setLoading(false)
+        }, 500) // Simulate loading delay
+      } else {
+        // Use real API data
+        const response = await apiClient.documents.list({
+          ...filters,
+          search: searchQuery,
+        })
 
-      // Mock additional data for demonstration
-      const documentsWithMeta = response.documents.map((doc) => ({
-        ...doc,
-        fileType: "PDF",
-        fileSize: "2.4 MB",
-      }))
+        // Mock additional data for demonstration
+        const documentsWithMeta = response.documents.map((doc) => ({
+          ...doc,
+          fileType: "PDF",
+          fileSize: "2.4 MB",
+        }))
 
-      setDocuments(documentsWithMeta)
+        setDocuments(documentsWithMeta)
+        setLoading(false)
+      }
     } catch (error) {
       console.error("Failed to load documents:", error)
-    } finally {
       setLoading(false)
     }
   }
@@ -148,6 +170,15 @@ export function DocumentManagement() {
 
   return (
     <div className="space-y-6">
+      {/* Demo Mode Indicator */}
+      {useSampleData && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-800">
+            📄 <strong>Demo Mode:</strong> Displaying sample document data
+          </p>
+        </div>
+      )}
+      
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold">Document Management</h1>

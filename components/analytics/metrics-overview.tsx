@@ -5,14 +5,24 @@ import { TrendingUp, TrendingDown, MessageSquare, FileText, Users, Star } from "
 
 interface MetricsOverviewProps {
   timeRange: string
+  analytics?: any
 }
 
-export function MetricsOverview({ timeRange }: MetricsOverviewProps) {
-  // Mock data - in real app, this would come from API
+export function MetricsOverview({ timeRange, analytics }: MetricsOverviewProps) {
+  // Use provided analytics data or fallback to static data
+  const metricsData = analytics || {
+    totalQueries: 2847,
+    totalDocuments: 247,
+    activeUsers: 89,
+    averageRating: 4.2,
+    responseTime: 1.2,
+    systemUptime: 99.8
+  }
+
   const metrics = [
     {
       title: "AI Queries",
-      value: "2,847",
+      value: metricsData.totalQueries?.toLocaleString() || "2,847",
       change: "+23%",
       trend: "up",
       icon: MessageSquare,
@@ -20,7 +30,7 @@ export function MetricsOverview({ timeRange }: MetricsOverviewProps) {
     },
     {
       title: "Documents Processed",
-      value: "247",
+      value: metricsData.totalDocuments?.toLocaleString() || "247",
       change: "+12%",
       trend: "up",
       icon: FileText,
@@ -28,7 +38,7 @@ export function MetricsOverview({ timeRange }: MetricsOverviewProps) {
     },
     {
       title: "Active Users",
-      value: "89",
+      value: metricsData.activeUsers?.toLocaleString() || "89",
       change: "+8%",
       trend: "up",
       icon: Users,
@@ -36,7 +46,7 @@ export function MetricsOverview({ timeRange }: MetricsOverviewProps) {
     },
     {
       title: "Avg Response Rating",
-      value: "4.2",
+      value: metricsData.averageRating?.toFixed(1) || "4.2",
       change: "+0.3",
       trend: "up",
       icon: Star,
@@ -44,7 +54,7 @@ export function MetricsOverview({ timeRange }: MetricsOverviewProps) {
     },
     {
       title: "Response Time",
-      value: "1.2s",
+      value: `${metricsData.responseTime?.toFixed(1) || "1.2"}s`,
       change: "-0.3s",
       trend: "up",
       icon: TrendingUp,
@@ -52,7 +62,7 @@ export function MetricsOverview({ timeRange }: MetricsOverviewProps) {
     },
     {
       title: "System Uptime",
-      value: "99.8%",
+      value: `${metricsData.systemUptime?.toFixed(1) || "99.8"}%`,
       change: "stable",
       trend: "stable",
       icon: TrendingUp,
