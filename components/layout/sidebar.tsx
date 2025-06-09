@@ -36,19 +36,19 @@ export function Sidebar() {
           icon: <Home className="h-5 w-5" />,
         },
         {
+          title: "Geo Analytics",
+          href: "/geo-insights",
+          icon: <BarChart3 className="h-5 w-5" />,
+        },
+        {
           title: "Railway Map",
           href: "/map",
-          icon: <Map className="h-5 w-5" />,
+          icon: <Map className="h-4 w-4" />,
         },
         {
           title: "Insight Explorer",
           href: "/insights",
-          icon: <Lightbulb className="h-5 w-5" />,
-        },
-        {
-          title: "Geo Analytics",
-          href: "/geo-insights",
-          icon: <BarChart3 className="h-5 w-5" />,
+          icon: <Lightbulb className="h-4 w-4" />,
         },
       ],
     },
@@ -157,8 +157,8 @@ export function Sidebar() {
                         !isExpanded && "px-2 justify-center",
                         isExpanded && `animate-in slide-in-from-left-2 duration-300 delay-${itemIndex * 50}`,
                         // Visual grouping for Geo Analytics sub-items
-                        isGeoSubItem && isExpanded && "ml-4 h-9 text-sm bg-muted/30 hover:bg-muted/50",
-                        isGeoSubItem && !isExpanded && "ml-1"
+                        isGeoSubItem && isExpanded && "ml-4 h-9 text-sm bg-muted/20 hover:bg-muted/40 text-muted-foreground opacity-75",
+                        isGeoSubItem && !isExpanded && "ml-1 opacity-75"
                       )}
                       asChild
                     >
