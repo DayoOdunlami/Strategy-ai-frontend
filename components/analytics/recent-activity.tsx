@@ -4,8 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { FileText, MessageSquare, Upload, User, Clock } from "lucide-react"
 
-export function RecentActivity() {
-  const activities = [
+interface RecentActivityProps {
+  activity?: any[]
+}
+
+export function RecentActivity({ activity }: RecentActivityProps) {
+  // Default fallback activity data
+  const defaultActivities = [
     {
       id: 1,
       type: "query",
@@ -61,6 +66,21 @@ export function RecentActivity() {
       icon: User,
     },
   ]
+
+  // Use provided activity or default
+  const activities = activity && activity.length > 0 ? activity.map((item, index) => ({
+    id: index + 1,
+    type: item.type === "document_upload" ? "upload" : 
+          item.type === "document_processed" ? "document" : 
+          item.type === "query" ? "query" : "user",
+    user: item.user || "System",
+    action: item.message,
+    sector: "General", // Could be extracted from message or added to demo data
+    timestamp: new Date(item.timestamp).toLocaleString(),
+    icon: item.type === "document_upload" ? Upload :
+          item.type === "document_processed" ? FileText :
+          item.type === "query" ? MessageSquare : User,
+  })) : defaultActivities
 
   const getSectorColor = (sector: string) => {
     switch (sector) {

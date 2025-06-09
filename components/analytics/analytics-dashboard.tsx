@@ -12,31 +12,51 @@ import { SectorPerformance } from "@/components/analytics/sector-performance"
 import { SystemHealth } from "@/components/analytics/system-health"
 import { RecentActivity } from "@/components/analytics/recent-activity"
 import apiClient from "@/lib/api-client"
+import { useDemoMode, DEMO_DATA } from "@/lib/demo-mode"
 
 export function AnalyticsDashboard() {
   const [timeRange, setTimeRange] = useState("7d")
   const [loading, setLoading] = useState(true)
   const [analytics, setAnalytics] = useState<any>(null)
+  const { useSampleData, isHydrated } = useDemoMode()
 
   useEffect(() => {
     loadAnalytics()
-  }, [timeRange])
+  }, [timeRange, useSampleData, isHydrated])
 
   const loadAnalytics = async () => {
     setLoading(true)
     try {
-      const [systemAnalytics, feedbackAnalytics] = await Promise.all([
-        apiClient.admin.getAnalytics(),
-        apiClient.admin.getFeedback(),
-      ])
+      if (useSampleData) {
+        // Use demo data when demo mode is enabled
+        setTimeout(() => {
+          setAnalytics({
+            system: DEMO_DATA.analytics,
+            feedback: {
+              total_feedback: 156,
+              average_rating: 4.2,
+              recent_feedback: []
+            },
+            activity: DEMO_DATA.recentActivity,
+            sectors: DEMO_DATA.sectorMetrics
+          })
+          setLoading(false)
+        }, 500) // Simulate loading delay
+      } else {
+        // Use real API data
+        const [systemAnalytics, feedbackAnalytics] = await Promise.all([
+          apiClient.admin.getAnalytics(),
+          apiClient.admin.getFeedback(),
+        ])
 
-      setAnalytics({
-        system: systemAnalytics,
-        feedback: feedbackAnalytics,
-      })
+        setAnalytics({
+          system: systemAnalytics,
+          feedback: feedbackAnalytics,
+        })
+        setLoading(false)
+      }
     } catch (error) {
       console.error("Failed to load analytics:", error)
-    } finally {
       setLoading(false)
     }
   }
@@ -59,6 +79,15 @@ export function AnalyticsDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Demo Mode Indicator */}
+      {useSampleData && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-800">
+            📊 <strong>Demo Mode:</strong> Displaying sample analytics data
+          </p>
+        </div>
+      )}
+      
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
@@ -87,20 +116,20 @@ export function AnalyticsDashboard() {
         </div>
       </div>
 
-      <MetricsOverview timeRange={timeRange} />
+      <MetricsOverview timeRange={timeRange} analytics={analytics?.system} />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <QueryAnalytics timeRange={timeRange} />
+        <QueryAnalytics timeRange={timeRange} sectors={analytics?.sectors} />
         <DocumentAnalytics timeRange={timeRange} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <FeedbackAnalytics analytics={analytics?.feedback} />
-        <SectorPerformance timeRange={timeRange} />
+        <SectorPerformance timeRange={timeRange} sectors={analytics?.sectors} />
         <SystemHealth />
       </div>
 
-      <RecentActivity />
+      <RecentActivity activity={analytics?.activity} />
     </div>
   )
 }
