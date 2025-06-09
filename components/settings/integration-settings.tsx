@@ -110,6 +110,10 @@ export function IntegrationSettings() {
             ...prev.neon,
             status: healthData.services?.database === "connected" ? "connected" : "disconnected"
           },
+          openai: {
+            ...prev.openai,
+            status: (healthData.services?.ai_service === "ready" || healthData.services?.ai_service === "connected") ? "connected" : "disconnected"
+          },
           // Add more mappings as backend provides them
         }))
       }
