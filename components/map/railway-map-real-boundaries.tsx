@@ -438,34 +438,11 @@ export function RailwayMapRealBoundaries() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">🗺️ Real UK Boundaries</h1>
-          <p className="text-muted-foreground">
-            Actual district shapes from{" "}
-            <a 
-              href="https://github.com/martinjc/UK-GeoJSON" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-primary hover:underline font-medium"
-            >
-              martinjc/UK-GeoJSON
-            </a>
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-          <Badge variant={isLoading ? "secondary" : "default"}>
-            {isLoading ? "Loading..." : "Real Shapes"}
-          </Badge>
-        </div>
-      </div>
-
       <div className="relative">
         <div 
           ref={mapContainer} 
           className="w-full rounded-lg border overflow-hidden shadow-lg"
-          style={{ height: '600px' }}
+          style={{ height: '900px' }}
         />
 
         {isLoading && (
@@ -480,17 +457,7 @@ export function RailwayMapRealBoundaries() {
           </div>
         )}
 
-        <div className="absolute top-4 right-4 flex flex-col gap-2">
-          <Button size="sm" variant="outline" onClick={handleZoomIn}>
-            <ZoomIn className="h-4 w-4" />
-          </Button>
-          <Button size="sm" variant="outline" onClick={handleZoomOut}>
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-          <Button size="sm" variant="outline" onClick={handleResetView}>
-            <RotateCcw className="h-4 w-4" />
-          </Button>
-        </div>
+
 
         <div className="absolute bottom-4 left-4 bg-background/95 rounded-lg p-3 border shadow-sm">
           <h4 className="font-medium mb-2 text-sm">Railway Regions</h4>

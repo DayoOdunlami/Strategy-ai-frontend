@@ -280,7 +280,7 @@ export function MergedGeoInsights() {
              </CardTitle>
            </CardHeader>
            <CardContent className="p-0">
-             <div className="h-[850px]">
+             <div className="h-[900px] overflow-auto">
                <RailwayMapRealBoundaries />
              </div>
            </CardContent>
