@@ -10,15 +10,23 @@ interface BackendRegion {
 }
 
 interface RailwayRegion {
-  id: string
+  region_id: string
   name: string
-  color: string
-  routes: string[]
+  code: string
   description: string
-  stations: number
-  projects: number
-  director?: string
-  route_miles?: number
+  color: string
+  major_cities: string[]
+  networkRail: {
+    director: string
+    fullDescription: string
+    routes: string[]
+    stats: {
+      routeMiles: number
+      stations: number
+      employees: string
+    }
+    url: string
+  }
 }
 
 export function useRegionalData() {
@@ -73,20 +81,37 @@ export function useRegionalData() {
       const data = await response.json()
       console.log('✅ SUCCESSFULLY FETCHED RAILWAY DATA:', data)
       
-      // Map backend data to your existing region format
+      // Map backend data to match RailwayMapRealBoundaries expected structure
       const mappedRegions: RailwayRegion[] = data.regions.map((region: BackendRegion) => {
         const config = regionConfig[region.code as keyof typeof regionConfig]
         
+        // Map backend region codes to component region_id format
+        const regionIdMap: Record<string, string> = {
+          'ER': 'eastern',
+          'SC': 'scotland', 
+          'WR': 'western',
+          'NR': 'london_north_western', // Closest match
+          'SR': 'southern'
+        }
+        
         return {
-          id: region.code.toLowerCase(),
-          name: `${region.name} Region`,
-          color: config?.color || '#666666',
-          routes: config?.routes || ['Regional routes'],
+          region_id: regionIdMap[region.code] || region.code.toLowerCase(),
+          name: region.name,
+          code: region.code,
           description: config?.description || `${region.name} railway network`,
-          stations: region.stations,
-          projects: region.cpc_projects,
-          director: region.director,
-          route_miles: region.route_miles
+          color: config?.color || '#666666',
+          major_cities: [], // Will be populated by component logic
+          networkRail: {
+            director: region.director, // ← Real Supabase director name
+            fullDescription: config?.description || `${region.name} railway network`,
+            routes: config?.routes || ['Regional routes'],
+            stats: {
+              routeMiles: region.route_miles,
+              stations: region.stations,
+              employees: "Network Staff"
+            },
+            url: `https://www.networkrail.co.uk/running-the-railway/our-regions/${region.name.toLowerCase()}/`
+          }
         }
       })
       
