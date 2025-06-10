@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRegionalData } from "@/hooks/use-regional-data"
 import { Search, Download, Info, Layers } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -56,53 +57,8 @@ export function RailwayMap() {
     railLines: true,
   })
 
-  const regions: RailwayRegion[] = [
-    {
-      id: "eastern",
-      name: "Eastern Region",
-      color: "#FF8C00",
-      routes: ["North and East route", "East Midlands route", "Anglia route"],
-      description: "Covering East England including major routes to Cambridge, Norwich, and the East Midlands",
-      stations: 245,
-      projects: 12,
-    },
-    {
-      id: "north-west-central",
-      name: "North West & Central Region",
-      color: "#32CD32",
-      routes: ["North West route", "Central route", "West Coast route"],
-      description: "Major routes including West Coast Main Line and connections to Manchester, Liverpool",
-      stations: 312,
-      projects: 18,
-    },
-    {
-      id: "scotland",
-      name: "Scotland Region",
-      color: "#4169E1",
-      routes: ["Scotland route"],
-      description: "Scottish railway network including connections to Edinburgh, Glasgow, and Highland routes",
-      stations: 189,
-      projects: 8,
-    },
-    {
-      id: "southern",
-      name: "Southern Region",
-      color: "#20B2AA",
-      routes: ["Kent route", "Sussex route", "Wessex route", "Western route"],
-      description: "South England routes including connections to Brighton, Dover, and South West",
-      stations: 428,
-      projects: 22,
-    },
-    {
-      id: "wales-western",
-      name: "Wales and Western Region",
-      color: "#DA70D6",
-      routes: ["Wales route", "Western route"],
-      description: "Welsh railway network and Western England including routes to Cardiff, Swansea",
-      stations: 156,
-      projects: 9,
-    },
-  ]
+  // Use live regional data from the backend API
+  const { regions, loading: regionsLoading, error: regionsError } = useRegionalData()
 
   const mockStations: Station[] = [
     {
