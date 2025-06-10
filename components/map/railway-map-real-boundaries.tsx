@@ -127,7 +127,7 @@ export function RailwayMapRealBoundaries({ height = 900, onRegionSelect }: { hei
   const [error, setError] = useState<string | null>(null)
   const [dataInfo, setDataInfo] = useState<any>(null)
   
-  // Get live regional data from Railway backend
+  // Get live regional data from Railway backend - Force redeploy
   const { regions: liveRegions, loading: backendLoading, error: backendError } = useRegionalData()
   
   // Use live data if available, otherwise fallback to defaults
@@ -305,7 +305,7 @@ export function RailwayMapRealBoundaries({ height = 900, onRegionSelect }: { hei
           popup.remove()
         })
 
-        console.log('Successfully added real UK boundaries!')
+        console.log('Successfully added real UK boundaries with live data!')
         setIsLoading(false)
       } catch (err) {
         console.error('Error adding boundaries:', err)
@@ -465,8 +465,6 @@ export function RailwayMapRealBoundaries({ height = 900, onRegionSelect }: { hei
             </div>
           </div>
         )}
-
-
 
         <div className="absolute bottom-4 left-4 bg-background/95 rounded-lg p-3 border shadow-sm">
           <h4 className="font-medium mb-2 text-sm">Railway Regions</h4>
