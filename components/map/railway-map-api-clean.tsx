@@ -343,57 +343,6 @@ export function RailwayMapApiClean({ height = 900, onRegionSelect }: RailwayMapA
           </div>
         )}
       </div>
-
-      {/* Selected Region Panel - Clean API Data Display */}
-      {selectedRegion && (
-        <Card className="border-l-4" style={{ borderLeftColor: selectedRegion.region.color }}>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                🚂 {selectedRegion.region.name} ({selectedRegion.region.code})
-              </span>
-              <button onClick={() => setSelectedRegion(null)} className="text-muted-foreground hover:text-foreground">
-                <X className="h-4 w-4" />
-              </button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium text-primary">👤 Regional Director</h4>
-                <p className="text-lg font-semibold">{selectedRegion.region.director}</p>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Route Miles</p>
-                  <p className="text-xl font-bold text-green-600">{selectedRegion.region.route_miles.toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Stations</p>
-                  <p className="text-xl font-bold text-blue-600">{selectedRegion.region.stations}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">CPC Projects</p>
-                  <p className="text-xl font-bold text-orange-600">{selectedRegion.region.cpc_projects}</p>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Description</p>
-                <p className="text-sm">{selectedRegion.region.description}</p>
-              </div>
-
-              {selectedRegion.clickedDistrict && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Clicked District</p>
-                  <p className="text-sm font-medium">{selectedRegion.clickedDistrict.name}</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 } 
