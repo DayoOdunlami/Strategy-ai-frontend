@@ -131,9 +131,9 @@ export function RailwayMapRealBoundaries({ height = 900, onRegionSelect }: { hei
   const { regions: liveRegions, loading: backendLoading, error: backendError } = useRegionalData()
   
   // Use live data if available, otherwise fallback to defaults
-  // TEMPORARILY DISABLE FALLBACK TO TEST
-  const RAILWAY_REGIONS = liveRegions && liveRegions.length > 0 ? liveRegions : []
-  // const RAILWAY_REGIONS = liveRegions && liveRegions.length > 0 ? liveRegions : FALLBACK_RAILWAY_REGIONS
+  // Re-enable fallback but prioritize API data in click handler
+  const RAILWAY_REGIONS = liveRegions && liveRegions.length > 0 ? liveRegions : FALLBACK_RAILWAY_REGIONS
+  // const RAILWAY_REGIONS = liveRegions && liveRegions.length > 0 ? liveRegions : []
 
   // Debug logging to see what we're actually working with
   useEffect(() => {
@@ -277,13 +277,58 @@ export function RailwayMapRealBoundaries({ height = 900, onRegionSelect }: { hei
           if (e.features && e.features[0]) {
             const feature = e.features[0]
             const regionId = feature.properties.railway_region
-            const regionData = RAILWAY_REGIONS.find(r => r.region_id === regionId)
+            
+            // Find region by matching region_id to our API data
+            let regionData = null
+            
+            // Map component region_id to API region codes
+            const regionMapping: Record<string, string> = {
+              'eastern': 'ER',
+              'scotland': 'SC', 
+              'western': 'WR',
+              'london_north_western': 'NR',
+              'london_north_eastern': 'LNE', // Fallback data only
+              'southern': 'SR'
+            }
+            
+            // Try to find in live API data first
+            const apiCode = regionMapping[regionId]
+            if (apiCode && liveRegions && liveRegions.length > 0) {
+              const apiRegion = liveRegions.find(r => r.code === apiCode)
+              if (apiRegion) {
+                // Create compatible structure for API data
+                regionData = {
+                  region_id: regionId,
+                  name: apiRegion.name,
+                  code: apiRegion.code,
+                  description: apiRegion.description,
+                  color: apiRegion.color,
+                  major_cities: [],
+                  networkRail: {
+                    director: apiRegion.director, // Real Supabase director!
+                    fullDescription: apiRegion.description,
+                    routes: apiRegion.routes,
+                    stats: {
+                      routeMiles: apiRegion.route_miles,
+                      stations: apiRegion.stations,
+                      employees: "Network Staff"
+                    },
+                    url: `https://www.networkrail.co.uk/running-the-railway/our-regions/${apiRegion.name.toLowerCase()}/`
+                  }
+                }
+              }
+            }
+            
+            // Fallback to hardcoded data if no API data found
+            if (!regionData) {
+              regionData = FALLBACK_RAILWAY_REGIONS.find(r => r.region_id === regionId)
+            }
             
             if (regionData) {
               const regionInfo = {
                 region: regionData,
                 stats: {
-                  stations: Math.floor(Math.random() * 200) + 50,
+                  stations: regionData.networkRail?.stats?.stations || Math.floor(Math.random() * 200) + 50,
                   projects: Math.floor(Math.random() * 20) + 5,
                   documents: Math.floor(Math.random() * 100) + 20
                 },
@@ -292,6 +337,7 @@ export function RailwayMapRealBoundaries({ height = 900, onRegionSelect }: { hei
                   code: feature.properties.LAD13CD
                 }
               }
+              console.log('🎯 Selected region with real API data:', regionInfo)
               setSelectedRegion(regionInfo)
               onRegionSelect?.(regionInfo)
             }

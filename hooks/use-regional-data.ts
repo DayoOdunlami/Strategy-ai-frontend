@@ -10,23 +10,15 @@ interface BackendRegion {
 }
 
 interface RailwayRegion {
-  region_id: string
-  name: string
   code: string
-  description: string
+  name: string
+  director: string
+  route_miles: number
+  stations: number
+  cpc_projects: number
   color: string
-  major_cities: string[]
-  networkRail: {
-    director: string
-    fullDescription: string
-    routes: string[]
-    stats: {
-      routeMiles: number
-      stations: number
-      employees: string
-    }
-    url: string
-  }
+  routes: string[]
+  description: string
 }
 
 export function useRegionalData() {
@@ -81,37 +73,15 @@ export function useRegionalData() {
       const data = await response.json()
       console.log('✅ SUCCESSFULLY FETCHED RAILWAY DATA:', data)
       
-      // Map backend data to match RailwayMapRealBoundaries expected structure
+      // Simple mapping - just add colors and routes to API data
       const mappedRegions: RailwayRegion[] = data.regions.map((region: BackendRegion) => {
         const config = regionConfig[region.code as keyof typeof regionConfig]
         
-        // Map backend region codes to component region_id format
-        const regionIdMap: Record<string, string> = {
-          'ER': 'eastern',
-          'SC': 'scotland', 
-          'WR': 'western',
-          'NR': 'london_north_western', // Closest match
-          'SR': 'southern'
-        }
-        
         return {
-          region_id: regionIdMap[region.code] || region.code.toLowerCase(),
-          name: region.name,
-          code: region.code,
-          description: config?.description || `${region.name} railway network`,
+          ...region, // Keep all API fields as-is
           color: config?.color || '#666666',
-          major_cities: [], // Will be populated by component logic
-          networkRail: {
-            director: region.director, // ← Real Supabase director name
-            fullDescription: config?.description || `${region.name} railway network`,
-            routes: config?.routes || ['Regional routes'],
-            stats: {
-              routeMiles: region.route_miles,
-              stations: region.stations,
-              employees: "Network Staff"
-            },
-            url: `https://www.networkrail.co.uk/running-the-railway/our-regions/${region.name.toLowerCase()}/`
-          }
+          routes: config?.routes || ['Regional routes'],
+          description: config?.description || `${region.name} railway network`
         }
       })
       
