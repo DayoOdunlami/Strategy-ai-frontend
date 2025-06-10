@@ -106,7 +106,7 @@ const FALLBACK_RAILWAY_REGIONS = [
     major_cities: ["London", "Brighton", "Portsmouth", "Canterbury"],
     // Network Rail official data
     networkRail: {
-      director: "Ellie Burrows",
+      director: "Ellie Burrows dummy data",
       fullDescription: "The busiest and most densely populated part of the network. Includes London commuter routes and the South West Main Line.",
       routes: ["Kent", "Sussex", "Wessex"],
       stats: {
@@ -131,7 +131,19 @@ export function RailwayMapRealBoundaries({ height = 900, onRegionSelect }: { hei
   const { regions: liveRegions, loading: backendLoading, error: backendError } = useRegionalData()
   
   // Use live data if available, otherwise fallback to defaults
-  const RAILWAY_REGIONS = liveRegions && liveRegions.length > 0 ? liveRegions : FALLBACK_RAILWAY_REGIONS
+  // TEMPORARILY DISABLE FALLBACK TO TEST
+  const RAILWAY_REGIONS = liveRegions && liveRegions.length > 0 ? liveRegions : []
+  // const RAILWAY_REGIONS = liveRegions && liveRegions.length > 0 ? liveRegions : FALLBACK_RAILWAY_REGIONS
+
+  // Debug logging to see what we're actually working with
+  useEffect(() => {
+    console.log('🔍 RailwayMapRealBoundaries data check:')
+    console.log('  liveRegions:', liveRegions)
+    console.log('  liveRegions.length:', liveRegions?.length)
+    console.log('  RAILWAY_REGIONS being used:', RAILWAY_REGIONS)
+    console.log('  backendLoading:', backendLoading)
+    console.log('  backendError:', backendError)
+  }, [liveRegions, backendLoading, backendError])
 
   useEffect(() => {
     if (!mapContainer.current) return
