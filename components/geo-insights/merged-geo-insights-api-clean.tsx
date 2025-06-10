@@ -16,9 +16,9 @@ export function MergedGeoInsightsApiClean() {
     <div className="flex-1 space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">🚂 Geospatial Analytics Dashboard (API Clean)</h1>
+          <h1 className="text-3xl font-bold tracking-tight">🚂 Geospatial Analytics Dashboard</h1>
           <p className="text-muted-foreground">
-            Interactive railway map with live API data - Clean implementation
+            Interactive railway map with live API data
           </p>
         </div>
       </div>

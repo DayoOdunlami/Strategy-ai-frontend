@@ -1,13 +1,13 @@
 "use client"
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { MergedGeoInsights } from "@/components/geo-insights/merged-geo-insights"
+import { MergedGeoInsightsApiClean } from "@/components/geo-insights/merged-geo-insights-api-clean"
 import { ContextualChat } from "@/components/chat/contextual-chat"
 
 export default function GeoInsightsPage() {
   return (
     <DashboardLayout>
-      <MergedGeoInsights />
+      <MergedGeoInsightsApiClean />
       <ContextualChat context="insights" />
     </DashboardLayout>
   )
