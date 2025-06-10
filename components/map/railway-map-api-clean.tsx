@@ -123,6 +123,7 @@ export function RailwayMapApiClean({ height = 900, onRegionSelect }: RailwayMapA
 
         map.current = mapInstance
       } catch (err) {
+        console.error('Failed to create map:', err)
         setError('Failed to create map')
         setIsLoading(false)
       }
@@ -187,7 +188,7 @@ export function RailwayMapApiClean({ height = 900, onRegionSelect }: RailwayMapA
                 }
               }
               
-              console.log('✅ Selected API region:', regionInfo)
+              console.log('🎯 Selected region with real API data:', regionInfo)
               setSelectedRegion(regionInfo)
               onRegionSelect?.(regionInfo)
             } else {
@@ -205,11 +206,21 @@ export function RailwayMapApiClean({ height = 900, onRegionSelect }: RailwayMapA
       }
     }
 
-    initializeMap()
+    // Wait for API data before initializing map
+    if (apiRegions && apiRegions.length > 0) {
+      initializeMap()
+    }
 
     return () => {
-      if (map.current) {
-        map.current.remove()
+      // Improved cleanup logic
+      if (map.current && typeof map.current.remove === 'function') {
+        try {
+          map.current.remove()
+          map.current = null
+        } catch (err) {
+          console.warn('Map cleanup warning:', err)
+          map.current = null
+        }
       }
     }
   }, [apiRegions, onRegionSelect])
