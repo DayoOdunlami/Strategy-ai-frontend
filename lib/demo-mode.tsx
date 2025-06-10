@@ -156,9 +156,9 @@ const isBrowser = typeof window !== 'undefined'
 // Provider component
 export function DemoModeProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<DemoModeConfig>({
-    enabled: true, // Default to enabled for new users
+    enabled: false, // Default to disabled so real API data shows
     showBanner: true,
-    sampleDataEnabled: true
+    sampleDataEnabled: false
   })
   
   const [mounted, setMounted] = useState(false)
