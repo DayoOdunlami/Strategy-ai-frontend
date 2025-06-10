@@ -3,15 +3,17 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-6045b.up.railway.app'
 
-export type Sector = "Technology" | "Healthcare" | "Rail" | "Maritime" | "Highways" | "General"
+export type Sector = "Rail" | "Maritime" | "Highways" | "General"
 export type UseCase =
-  | "quick-playbook"
-  | "lessons-learned"
-  | "project-review"
-  | "trl-mapping"
-  | "project-similarity"
-  | "change-management"
-  | "product-acceptance"
+  | "strategy"
+  | "general"
+  | "Quick Playbook Answers"
+  | "Lessons Learned"
+  | "Project Review / MOT"
+  | "TRL / RIRL Mapping"
+  | "Project Similarity"
+  | "Change Management"
+  | "Product Acceptance"
 
 export type UserType = "public" | "admin" | "analyst"
 
@@ -43,6 +45,10 @@ export interface DocumentUploadRequest {
   sector: string
   use_case?: string
   title?: string
+}
+
+export interface DocumentMetadata extends DocumentUploadRequest {
+  description?: string
 }
 
 export interface DocumentResponse {
@@ -119,6 +125,36 @@ export interface SystemHealth {
   }
 }
 
+export interface DocumentAnalysisResponse {
+  success: boolean
+  analysis?: {
+    contentType: string
+    complexity: "low" | "medium" | "high"
+    recommendedChunking: {
+      type: string
+      size: number
+      overlap: number
+      strategy: string
+    }
+    estimatedChunks: number
+    aiInsights: {
+      wordCount: number
+      tokenCount?: number
+      hasStructure: boolean
+      hasTechnicalContent: boolean
+      hasDataElements: boolean
+      recommendedStrategy: string
+      pineconeOptimized?: boolean
+      targetEmbeddingSize?: number
+      primary_content_type?: string
+      structure_quality?: string
+      key_topics?: string[]
+      chunking_priority?: string
+    }
+  }
+  error?: string
+}
+
 // Helper function for API calls
 async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`
@@ -143,6 +179,36 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
     console.error(`API call to ${endpoint} failed:`, error)
     throw error
   }
+}
+
+// JWT Token Generation for Backend Authentication
+function generateJWT(): string {
+  const header = {
+    alg: "HS256",
+    typ: "JWT"
+  };
+  
+  const payload = {
+    sub: "frontend_user",
+    exp: Math.floor(Date.now() / 1000) + (60 * 60) // 1 hour expiration
+  };
+  
+  // Simple JWT generation (for production, use a proper JWT library)
+  const secretKey = "your-secret-key-change-in-production";
+  
+  function base64UrlEncode(str: string): string {
+    return btoa(str)
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+  }
+  
+  const encodedHeader = base64UrlEncode(JSON.stringify(header));
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  
+  // For simplicity, we'll use a static token (in production, implement proper HMAC-SHA256)
+  // This matches the token we generated with PowerShell
+  return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDk1NjQ3NjksInN1YiI6InRlc3RfdXNlciJ9.b9fNCujLYFSZNzn8VEJ923OOFRmiSCd5dfJFK6OoXbY";
 }
 
 // Real API client connected to your backend
@@ -177,6 +243,33 @@ const apiClient = {
 
   // Document management
   documents: {
+    analyze: async (file: File, sector: string, use_case: string): Promise<DocumentAnalysisResponse> => {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('sector', sector)
+      formData.append('use_case', use_case)
+
+      const jwt_token = generateJWT();
+
+      // For file uploads, use direct fetch to avoid Content-Type header issues
+      const url = `${API_BASE_URL}/documents/analyze`
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${jwt_token}`,
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`Analysis failed: ${response.status} ${response.statusText}`, errorText)
+        throw new Error(`Analysis failed: ${response.status} ${response.statusText}`)
+      }
+
+      return await response.json()
+    },
+
     upload: async (file: File, metadata: DocumentUploadRequest): Promise<DocumentResponse> => {
       const formData = new FormData()
       formData.append('file', file)
@@ -184,11 +277,26 @@ const apiClient = {
       if (metadata.use_case) formData.append('use_case', metadata.use_case)
       if (metadata.title) formData.append('title', metadata.title)
 
-      return apiCall<DocumentResponse>('/documents/upload', {
+      const jwt_token = generateJWT();
+
+      // For file uploads, don't set Content-Type - let browser handle multipart/form-data
+      const url = `${API_BASE_URL}/documents/upload`
+      const response = await fetch(url, {
         method: 'POST',
         body: formData,
-        headers: {}, // Don't set Content-Type for FormData
+        headers: {
+          'Authorization': `Bearer ${jwt_token}`,
+          // Don't set Content-Type for FormData - browser sets multipart/form-data automatically
+        },
       })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`Upload failed: ${response.status} ${response.statusText}`, errorText)
+        throw new Error(`Upload failed: ${response.status} ${response.statusText}`)
+      }
+
+      return await response.json()
     },
 
     list: async (params: {

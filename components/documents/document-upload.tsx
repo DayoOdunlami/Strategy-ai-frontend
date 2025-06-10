@@ -145,40 +145,37 @@ export function DocumentUpload() {
 
   const [domains] = useState<Domain[]>([
     {
-      id: "ai",
-      name: "AI & Technology",
-      topics: ["Machine Learning", "Natural Language Processing", "Computer Vision", "Automation"],
+      id: "rail",
+      name: "Rail",
+      topics: ["Rail Infrastructure", "Station Management", "Railway Safety", "Electrification"],
     },
     {
-      id: "economics",
-      name: "Economics & Finance",
-      topics: ["Market Analysis", "Financial Planning", "Economic Policy", "Investment Strategy"],
+      id: "maritime",
+      name: "Maritime",
+      topics: ["Maritime Infrastructure", "Ports", "Shipping Systems", "Maritime Safety"],
+    },
+    {
+      id: "highways",
+      name: "Highways",
+      topics: ["Road Infrastructure", "Traffic Management", "Highway Safety", "Smart Roads"],
     },
     {
       id: "general",
       name: "General",
       topics: ["Funding Opportunities", "Innovation Strategy", "Research Ethics", "Policy Development"],
     },
-    {
-      id: "highway",
-      name: "Highway & Roads",
-      topics: ["Road Infrastructure", "Traffic Management", "Highway Safety", "Smart Roads"],
-    },
-    {
-      id: "rail",
-      name: "Rail & Transit",
-      topics: ["Rail Infrastructure", "Station Management", "Railway Safety", "Electrification"],
-    },
   ])
 
   const useCaseOptions: { value: UseCase; label: string; category: string }[] = [
-    { value: "quick-playbook", label: "Quick Playbook Answers", category: "Operational" },
-    { value: "lessons-learned", label: "Lessons Learned", category: "Knowledge" },
-    { value: "project-review", label: "Project Review / MOT", category: "Assessment" },
-    { value: "trl-mapping", label: "TRL / RIRL Mapping", category: "Analysis" },
-    { value: "project-similarity", label: "Project Similarity", category: "Analysis" },
-    { value: "change-management", label: "Change Management", category: "Strategic" },
-    { value: "product-acceptance", label: "Product Acceptance", category: "Assessment" },
+    { value: "strategy", label: "Strategy", category: "Strategic" },
+    { value: "general", label: "General", category: "General" },
+    { value: "Quick Playbook Answers", label: "Quick Playbook Answers", category: "Operational" },
+    { value: "Lessons Learned", label: "Lessons Learned", category: "Knowledge" },
+    { value: "Project Review / MOT", label: "Project Review / MOT", category: "Assessment" },
+    { value: "TRL / RIRL Mapping", label: "TRL / RIRL Mapping", category: "Analysis" },
+    { value: "Project Similarity", label: "Project Similarity", category: "Analysis" },
+    { value: "Change Management", label: "Change Management", category: "Strategic" },
+    { value: "Product Acceptance", label: "Product Acceptance", category: "Assessment" },
   ]
 
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
@@ -232,24 +229,72 @@ export function DocumentUpload() {
   const analyzeFileForChunking = async (file: UploadFile) => {
     setUploadFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, status: "analyzing", progress: 10 } : f)))
 
-    // Simulate AI analysis
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    try {
+      // Real AI analysis using backend API
+      const analysisResponse = await apiClient.documents.analyze(
+        file.file, 
+        metadata.domain || "General", 
+        metadata.useCase || "general"
+      )
 
-    const analysisResults = {
-      contentType: file.file.type.includes("pdf") ? "PDF Document" : "Text Document",
-      complexity: (["low", "medium", "high"] as const)[Math.floor(Math.random() * 3)],
-      recommendedChunking: {
-        type: "semantic" as const,
-        size: 800,
-        overlap: 150,
-        strategy: "Context-aware semantic boundaries",
-      },
-      estimatedChunks: Math.ceil(file.file.size / 1000),
+      if (analysisResponse.success && analysisResponse.analysis) {
+        const analysis = analysisResponse.analysis
+        
+        const analysisResults = {
+          contentType: analysis.contentType,
+          complexity: analysis.complexity,
+          recommendedChunking: {
+            type: analysis.recommendedChunking.type as ChunkingMethod["type"],
+            size: analysis.recommendedChunking.size,
+            overlap: analysis.recommendedChunking.overlap,
+            strategy: analysis.recommendedChunking.strategy,
+          },
+          estimatedChunks: analysis.estimatedChunks,
+          aiInsights: analysis.aiInsights
+        }
+
+        setUploadFiles((prev) =>
+          prev.map((f) => (f.id === file.id ? { ...f, status: "pending", progress: 0, analysisResults } : f)),
+        )
+      } else {
+        // Fallback to basic analysis if AI fails
+        console.warn("AI analysis failed, using fallback:", analysisResponse.error)
+        const basicAnalysisResults = {
+          contentType: file.file.type.includes("pdf") ? "PDF Document" : "Text Document",
+          complexity: "medium" as const,
+          recommendedChunking: {
+            type: "fixed-size" as const,
+            size: 1000,
+            overlap: 200,
+            strategy: "Standard chunking (AI unavailable)",
+          },
+          estimatedChunks: Math.ceil(file.file.size / 1000),
+        }
+
+        setUploadFiles((prev) =>
+          prev.map((f) => (f.id === file.id ? { ...f, status: "pending", progress: 0, analysisResults: basicAnalysisResults } : f)),
+        )
+      }
+    } catch (error) {
+      console.error("AI analysis error:", error)
+      
+      // Fallback to basic analysis on error
+      const basicAnalysisResults = {
+        contentType: file.file.type.includes("pdf") ? "PDF Document" : "Text Document",
+        complexity: "medium" as const,
+        recommendedChunking: {
+          type: "fixed-size" as const,
+          size: 1000,
+          overlap: 200,
+          strategy: "Standard chunking (AI error)",
+        },
+        estimatedChunks: Math.ceil(file.file.size / 1000),
+      }
+
+      setUploadFiles((prev) =>
+        prev.map((f) => (f.id === file.id ? { ...f, status: "pending", progress: 0, analysisResults: basicAnalysisResults } : f)),
+      )
     }
-
-    setUploadFiles((prev) =>
-      prev.map((f) => (f.id === file.id ? { ...f, status: "pending", progress: 0, analysisResults } : f)),
-    )
   }
 
   const addTopic = () => {
