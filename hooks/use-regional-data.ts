@@ -93,53 +93,39 @@ export function useRegionalData() {
       console.error('Error fetching regional data:', err)
       setError(err instanceof Error ? err.message : 'Failed to load regional data')
       
-      // Fallback to original mock data if API fails
+      // FALLBACK DATA (API Failed) - Distinct from demo mode data
+      console.warn('🚨 API FAILED - Using fallback data')
       setRegions([
         {
-          id: "eastern",
-          name: "Eastern Region",
-          color: "#FF8C00",
-          routes: ["North and East route", "East Midlands route", "Anglia route"],
-          description: "Covering East England including major routes to Cambridge, Norwich, and the East Midlands",
-          stations: 245,
-          projects: 12,
+          id: "fallback-eastern",
+          name: "🔄 FALLBACK: Eastern Region",
+          color: "#FF0000", // Red to indicate fallback
+          routes: ["FALLBACK: East Coast route"],
+          description: "⚠️ FALLBACK DATA: API connection failed - this is emergency fallback data",
+          stations: 999,
+          projects: 99,
+          director: "FALLBACK: Emergency Mode"
         },
         {
-          id: "north-west-central",
-          name: "North West & Central Region",
-          color: "#32CD32",
-          routes: ["North West route", "Central route", "West Coast route"],
-          description: "Major routes including West Coast Main Line and connections to Manchester, Liverpool",
-          stations: 312,
-          projects: 18,
+          id: "fallback-scotland", 
+          name: "🔄 FALLBACK: Scotland Region",
+          color: "#FF0000",
+          routes: ["FALLBACK: Highland route"],
+          description: "⚠️ FALLBACK DATA: API connection failed - this is emergency fallback data",
+          stations: 888,
+          projects: 88,
+          director: "FALLBACK: Emergency Mode"
         },
         {
-          id: "scotland",
-          name: "Scotland Region",
-          color: "#4169E1",
-          routes: ["Scotland route"],
-          description: "Scottish railway network including connections to Edinburgh, Glasgow, and Highland routes",
-          stations: 189,
-          projects: 8,
-        },
-        {
-          id: "southern",
-          name: "Southern Region",
-          color: "#20B2AA",
-          routes: ["Kent route", "Sussex route", "Wessex route", "Western route"],
-          description: "South England routes including connections to Brighton, Dover, and South West",
-          stations: 428,
-          projects: 22,
-        },
-        {
-          id: "wales-western",
-          name: "Wales and Western Region",
-          color: "#DA70D6",
-          routes: ["Wales route", "Western route"],
-          description: "Welsh railway network and Western England including routes to Cardiff, Swansea",
-          stations: 156,
-          projects: 9,
-        },
+          id: "fallback-southern",
+          name: "🔄 FALLBACK: Southern Region", 
+          color: "#FF0000",
+          routes: ["FALLBACK: South Coast route"],
+          description: "⚠️ FALLBACK DATA: API connection failed - this is emergency fallback data",
+          stations: 777,
+          projects: 77,
+          director: "FALLBACK: Emergency Mode"
+        }
       ])
     } finally {
       setLoading(false)
