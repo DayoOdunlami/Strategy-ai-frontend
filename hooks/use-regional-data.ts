@@ -62,13 +62,16 @@ export function useRegionalData() {
   const fetchRegionalData = async () => {
     try {
       setLoading(true)
+      console.log('🚀 ATTEMPTING TO FETCH REGIONS FROM RAILWAY API...')
       const response = await fetch('https://web-production-6045b.up.railway.app/api/regions')
+      console.log('📡 Railway API Response:', response.status, response.statusText)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch regions: ${response.status}`)
       }
       
       const data = await response.json()
+      console.log('✅ SUCCESSFULLY FETCHED RAILWAY DATA:', data)
       
       // Map backend data to your existing region format
       const mappedRegions: RailwayRegion[] = data.regions.map((region: BackendRegion) => {
@@ -89,6 +92,7 @@ export function useRegionalData() {
       
       setRegions(mappedRegions)
       setError(null)
+      console.log('🎉 REGIONS MAPPED AND SET:', mappedRegions.length, 'regions')
     } catch (err) {
       console.error('Error fetching regional data:', err)
       setError(err instanceof Error ? err.message : 'Failed to load regional data')
