@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { X, ZoomIn, ZoomOut, RotateCcw, Loader2 } from "lucide-react"
+import { useRegionalData } from "@/hooks/use-regional-data"
 
-// Railway regions with improved geographical mapping
-const RAILWAY_REGIONS = [
+// Default fallback regions with improved geographical mapping
+const FALLBACK_RAILWAY_REGIONS = [
   {
     region_id: "scotland",
     name: "Scotland",
@@ -125,6 +126,12 @@ export function RailwayMapRealBoundaries({ height = 900, onRegionSelect }: { hei
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [dataInfo, setDataInfo] = useState<any>(null)
+  
+  // Get live regional data from Railway backend
+  const { regions: liveRegions, loading: backendLoading, error: backendError } = useRegionalData()
+  
+  // Use live data if available, otherwise fallback to defaults
+  const RAILWAY_REGIONS = liveRegions && liveRegions.length > 0 ? liveRegions : FALLBACK_RAILWAY_REGIONS
 
   useEffect(() => {
     if (!mapContainer.current) return
