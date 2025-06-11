@@ -401,7 +401,11 @@ export function DocumentUpload() {
       setUploadFiles((prev) =>
         prev.map((file) =>
           file.id === uploadFile.id
-            ? { ...file, progress: 100, status: response.status === "processing" ? "processing" : "complete" }
+            ? { 
+                ...file, 
+                progress: 100, 
+                status: response.status === "processing" || response.status === "completed" ? "complete" : "complete" 
+              }
             : file,
         ),
       )

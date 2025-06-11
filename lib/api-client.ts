@@ -52,9 +52,24 @@ export interface DocumentMetadata extends DocumentUploadRequest {
 }
 
 export interface DocumentResponse {
-  success: boolean
-  document_id?: string
-  message: string
+  success?: boolean  // Keep for backward compatibility
+  document_id?: string  // Keep for backward compatibility  
+  message?: string  // Keep for backward compatibility
+  // Rich response fields from Option B
+  id?: string
+  title?: string
+  filename?: string
+  sector?: string
+  use_case?: string
+  tags?: string
+  source_type?: string
+  source_url?: string
+  status?: string
+  chunk_count?: number
+  created_at?: string
+  updated_at?: string
+  feedback_count?: number
+  average_rating?: number | null
 }
 
 export interface SearchRequest {
@@ -280,7 +295,7 @@ const apiClient = {
       const jwt_token = generateJWT();
 
       // For file uploads, don't set Content-Type - let browser handle multipart/form-data
-      const url = `${API_BASE_URL}/documents/upload`
+      const url = `${API_BASE_URL}/documents/upload-v2`
       const response = await fetch(url, {
         method: 'POST',
         body: formData,
