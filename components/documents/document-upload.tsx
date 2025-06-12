@@ -239,8 +239,8 @@ export function DocumentUpload() {
 
       if (analysisResponse.success && analysisResponse.analysis) {
         const analysis = analysisResponse.analysis
-        
-        const analysisResults = {
+
+    const analysisResults = {
           contentType: analysis.contentType,
           complexity: analysis.complexity,
           recommendedChunking: {
@@ -260,20 +260,20 @@ export function DocumentUpload() {
         // Fallback to basic analysis if AI fails
         console.warn("AI analysis failed, using fallback:", analysisResponse.error)
         const basicAnalysisResults = {
-          contentType: file.file.type.includes("pdf") ? "PDF Document" : "Text Document",
+      contentType: file.file.type.includes("pdf") ? "PDF Document" : "Text Document",
           complexity: "medium" as const,
-          recommendedChunking: {
+      recommendedChunking: {
             type: "fixed-size" as const,
             size: 1000,
             overlap: 200,
             strategy: "Standard chunking (AI unavailable)",
-          },
-          estimatedChunks: Math.ceil(file.file.size / 1000),
-        }
+      },
+      estimatedChunks: Math.ceil(file.file.size / 1000),
+    }
 
-        setUploadFiles((prev) =>
+    setUploadFiles((prev) =>
           prev.map((f) => (f.id === file.id ? { ...f, status: "pending", progress: 0, analysisResults: basicAnalysisResults } : f)),
-        )
+    )
       }
     } catch (error) {
       console.error("AI analysis error:", error)

@@ -3,7 +3,7 @@
 import type React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart3, FileText, Home, Map, Settings, Upload, Lightbulb, Users, Shield, ChevronRight } from "lucide-react"
+import { BarChart3, FileText, Home, Map, Settings, Upload, Lightbulb, Users, Shield, ChevronRight, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -60,6 +60,11 @@ export function Sidebar() {
           title: "Documents",
           href: "/documents",
           icon: <FileText className="h-5 w-5" />,
+        },
+        {
+          title: "Document Discovery",
+          href: "/documents/discover",
+          icon: <Search className="h-4 w-4" />,
         },
         {
           title: "Upload",
