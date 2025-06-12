@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Filter, FileText, Calendar, Tag, Eye, Grid, List, Edit2, Check, X, Download, Upload, Trash2, MoreVertical } from "lucide-react"
+import { Search, Filter, FileText, Calendar, Tag, Eye, Grid, List, Edit2, Check, X, Download, Upload, Trash2, MoreVertical, Settings, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -28,6 +28,10 @@ interface Document {
   chunk_count: number
   created_at: string
   updated_at: string
+  metadata?: {
+    summary?: string
+    [key: string]: any
+  }
 }
 
 type ViewMode = "cards" | "table"
@@ -53,6 +57,17 @@ export function DocumentDiscovery() {
     use_case: "",
     tags: "",
     status: ""
+  })
+  const [visibleColumns, setVisibleColumns] = useState({
+    title: true,
+    summary: true,
+    sector: true,
+    use_case: true,
+    status: true,
+    date: true,
+    chunks: true,
+    tags: true,
+    actions: true
   })
   const { useSampleData } = useDemoMode()
 
@@ -96,6 +111,28 @@ export function DocumentDiscovery() {
       return [...new Set(Object.values(useCasesBySector).flat())]
     }
     return useCasesBySector[sector.toLowerCase() as keyof typeof useCasesBySector] || []
+  }
+
+  const toggleColumn = (columnKey: string) => {
+    setVisibleColumns(prev => ({
+      ...prev,
+      [columnKey]: !prev[columnKey as keyof typeof prev]
+    }))
+  }
+
+  const getDocumentSummary = (doc: Document) => {
+    // Try to get summary from metadata or generate a short one
+    if (doc.metadata && typeof doc.metadata === 'object' && 'summary' in doc.metadata) {
+      return doc.metadata.summary as string
+    }
+    
+    // Generate a basic summary from available data
+    const parts = []
+    if (doc.filename) parts.push(`File: ${doc.filename}`)
+    if (doc.chunk_count) parts.push(`${doc.chunk_count} sections`)
+    if (doc.status === 'ready') parts.push('Processed')
+    
+    return parts.length > 0 ? parts.join(' • ') : 'No summary available'
   }
 
   useEffect(() => {
@@ -501,7 +538,7 @@ export function DocumentDiscovery() {
           <p className="text-muted-foreground">Find and explore your strategic documents with enhanced search</p>
         </div>
         
-        {/* View Toggle */}
+        {/* View Toggle & Column Controls */}
         <div className="flex items-center gap-2">
           <Button
             variant={viewMode === "cards" ? "default" : "outline"}
@@ -519,6 +556,34 @@ export function DocumentDiscovery() {
             <List className="h-4 w-4 mr-2" />
             Table
           </Button>
+          
+          {/* Column Visibility Controls - only show in table mode */}
+          {viewMode === "table" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Columns
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {Object.entries(visibleColumns).map(([key, visible]) => (
+                  <DropdownMenuItem 
+                    key={key}
+                    onClick={() => toggleColumn(key)}
+                    className="flex items-center justify-between"
+                  >
+                    <span className="capitalize">{key.replace('_', ' ')}</span>
+                    <Checkbox 
+                      checked={visible} 
+                      onCheckedChange={() => toggleColumn(key)}
+                    />
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
 
@@ -653,14 +718,15 @@ export function DocumentDiscovery() {
                             onCheckedChange={handleSelectAll}
                           />
                         </TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Sector</TableHead>
-                        <TableHead>Use Case</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Chunks</TableHead>
-                        <TableHead>Tags</TableHead>
-                        <TableHead></TableHead>
+                        {visibleColumns.title && <TableHead>Title</TableHead>}
+                        {visibleColumns.summary && <TableHead className="max-w-xs">Summary</TableHead>}
+                        {visibleColumns.sector && <TableHead>Sector</TableHead>}
+                        {visibleColumns.use_case && <TableHead>Use Case</TableHead>}
+                        {visibleColumns.status && <TableHead>Status</TableHead>}
+                        {visibleColumns.date && <TableHead>Date</TableHead>}
+                        {visibleColumns.chunks && <TableHead>Chunks</TableHead>}
+                        {visibleColumns.tags && <TableHead>Tags</TableHead>}
+                        {visibleColumns.actions && <TableHead></TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -672,72 +738,95 @@ export function DocumentDiscovery() {
                               onCheckedChange={(checked) => handleSelectDoc(doc.id, checked as boolean)}
                             />
                           </TableCell>
-                          <TableCell className="font-medium max-w-64">
-                            <EditableCell
-                              docId={doc.id}
-                              field="title"
-                              value={doc.title}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <EditableCell
-                              docId={doc.id}
-                              field="sector"
-                              value={doc.sector}
-                              type="select"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <EditableCell
-                              docId={doc.id}
-                              field="use_case"
-                              value={doc.use_case || "—"}
-                              type="select"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(doc.status)}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(doc.created_at).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            {doc.chunk_count}
-                          </TableCell>
-                          <TableCell className="max-w-48">
-                            <EditableCell
-                              docId={doc.id}
-                              field="tags"
-                              value={doc.tags || ""}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent>
-                                <DropdownMenuItem>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  Preview
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <Edit2 className="h-4 w-4 mr-2" />
-                                  Edit Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <FileText className="h-4 w-4 mr-2" />
-                                  View Chunks
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-red-600">
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
+                          {visibleColumns.title && (
+                            <TableCell className="font-medium max-w-64">
+                              <EditableCell
+                                docId={doc.id}
+                                field="title"
+                                value={doc.title}
+                              />
+                            </TableCell>
+                          )}
+                          {visibleColumns.summary && (
+                            <TableCell className="max-w-xs">
+                              <div className="truncate text-sm text-muted-foreground">
+                                {getDocumentSummary(doc)}
+                              </div>
+                            </TableCell>
+                          )}
+                          {visibleColumns.sector && (
+                            <TableCell>
+                              <EditableCell
+                                docId={doc.id}
+                                field="sector"
+                                value={doc.sector}
+                                type="select"
+                              />
+                            </TableCell>
+                          )}
+                          {visibleColumns.use_case && (
+                            <TableCell>
+                              <EditableCell
+                                docId={doc.id}
+                                field="use_case"
+                                value={doc.use_case || "—"}
+                                type="select"
+                              />
+                            </TableCell>
+                          )}
+                          {visibleColumns.status && (
+                            <TableCell>
+                              {getStatusBadge(doc.status)}
+                            </TableCell>
+                          )}
+                          {visibleColumns.date && (
+                            <TableCell>
+                              {new Date(doc.created_at).toLocaleDateString()}
+                            </TableCell>
+                          )}
+                          {visibleColumns.chunks && (
+                            <TableCell>
+                              {doc.chunk_count}
+                            </TableCell>
+                          )}
+                          {visibleColumns.tags && (
+                            <TableCell className="max-w-48">
+                              <EditableCell
+                                docId={doc.id}
+                                field="tags"
+                                value={doc.tags || ""}
+                              />
+                            </TableCell>
+                          )}
+                          {visibleColumns.actions && (
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                  <DropdownMenuItem>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    Preview
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem>
+                                    <Edit2 className="h-4 w-4 mr-2" />
+                                    Edit Details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem>
+                                    <FileText className="h-4 w-4 mr-2" />
+                                    View Chunks
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-red-600">
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>
