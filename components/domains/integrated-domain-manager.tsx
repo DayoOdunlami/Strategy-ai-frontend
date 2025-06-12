@@ -265,6 +265,17 @@ export function IntegratedDomainManager() {
       }))
       
       stopEditing(itemId, field)
+      
+      // Show success message for updates
+      const isDomain = domains.some(d => d.id === itemId)
+      const itemName = isDomain 
+        ? domains.find(d => d.id === itemId)?.name 
+        : domains.flatMap(d => d.use_cases || []).find(uc => uc.id === itemId)?.name
+      
+      toast({
+        title: "✅ Update Successful",
+        description: `${isDomain ? 'Domain' : 'Use Case'} "${itemName}" has been updated.`,
+      })
     } catch (error) {
       console.error("Failed to save edit:", error)
       setError("Failed to save changes. Please try again.")
@@ -540,6 +551,63 @@ export function IntegratedDomainManager() {
            )
   })
 
+  const handleDeleteDomain = async (domain: DomainWithUseCases) => {
+    try {
+      if (!demoMode) {
+        // Real API call to delete domain
+        await apiClient.domains.delete(domain.id)
+        // Reload data to reflect the deletion
+        await loadData()
+        // Show success message
+        toast({
+          title: "✅ Domain Deleted Successfully",
+          description: `"${domain.name}" and all its use cases have been deleted.`,
+        })
+      } else {
+        // Demo delete operation
+        setDomains(prev => prev.filter(d => d.id !== domain.id))
+        // Show success message for demo
+        toast({
+          title: "✅ Domain Deleted Successfully",
+          description: `"${domain.name}" and all its use cases have been deleted.`,
+        })
+      }
+    } catch (error) {
+      console.error("Failed to delete domain:", error)
+      setError("Failed to delete domain. Please try again.")
+    }
+  }
+
+  const handleDeleteUseCase = async (useCase: UseCase) => {
+    try {
+      if (!demoMode) {
+        // Real API call to delete use case
+        await apiClient.useCases.delete(useCase.id)
+        // Reload data to reflect the deletion
+        await loadData()
+        // Show success message
+        toast({
+          title: "✅ Use Case Deleted Successfully",
+          description: `"${useCase.name}" has been deleted.`,
+        })
+      } else {
+        // Demo delete operation
+        setDomains(prev => prev.map(domain => ({
+          ...domain,
+          use_cases: domain.use_cases?.filter(uc => uc.id !== useCase.id) || []
+        })))
+        // Show success message for demo
+        toast({
+          title: "✅ Use Case Deleted Successfully",
+          description: `"${useCase.name}" has been deleted.`,
+        })
+      }
+    } catch (error) {
+      console.error("Failed to delete use case:", error)
+      setError("Failed to delete use case. Please try again.")
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -731,7 +799,10 @@ export function IntegratedDomainManager() {
                                   <Edit2 className="h-4 w-4 mr-2" />
                                   Edit Domain
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-red-600">
+                                <DropdownMenuItem 
+                                  className="text-red-600"
+                                  onClick={() => handleDeleteDomain(domain)}
+                                >
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Delete Domain
                                 </DropdownMenuItem>
@@ -812,7 +883,10 @@ export function IntegratedDomainManager() {
                                     <Edit2 className="h-4 w-4 mr-2" />
                                     Edit Use Case
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem className="text-red-600">
+                                  <DropdownMenuItem 
+                                    className="text-red-600"
+                                    onClick={() => handleDeleteUseCase(useCase)}
+                                  >
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     Delete Use Case
                                   </DropdownMenuItem>
@@ -861,6 +935,14 @@ export function IntegratedDomainManager() {
                             <Edit2 className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-red-600"
+                            onClick={() => handleDeleteDomain(domain)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Domain
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -906,6 +988,14 @@ export function IntegratedDomainManager() {
                                     <DropdownMenuItem>
                                       <Move className="h-4 w-4 mr-2" />
                                       Move
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem 
+                                      className="text-red-600"
+                                      onClick={() => handleDeleteUseCase(useCase)}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>

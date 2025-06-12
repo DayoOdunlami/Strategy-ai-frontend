@@ -533,9 +533,9 @@ export function DocumentDiscovery() {
 
       {/* Page Header */}
       <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold">Discover Documents</h1>
-          <p className="text-muted-foreground">Find and explore your strategic documents with enhanced search</p>
+      <div>
+        <h1 className="text-3xl font-bold">Discover Documents</h1>
+        <p className="text-muted-foreground">Find and explore your strategic documents with enhanced search</p>
         </div>
         
         {/* View Toggle & Column Controls */}
@@ -835,68 +835,68 @@ export function DocumentDiscovery() {
               </Card>
             ) : (
               /* Card View */
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {documents.map((doc) => (
-                  <Card key={doc.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {documents.map((doc) => (
+                <Card key={doc.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3 flex-1">
                           <Checkbox
                             checked={selectedDocs.has(doc.id)}
                             onCheckedChange={(checked) => handleSelectDoc(doc.id, checked as boolean)}
                           />
-                          <CardTitle className="text-base leading-tight">
-                            {doc.title}
-                          </CardTitle>
+                      <CardTitle className="text-base leading-tight">
+                        {doc.title}
+                      </CardTitle>
                         </div>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {/* Badges */}
+                      <div className="flex flex-wrap gap-2">
+                        {getSectorBadge(doc.sector)}
+                        {getStatusBadge(doc.status)}
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {/* Badges */}
-                        <div className="flex flex-wrap gap-2">
-                          {getSectorBadge(doc.sector)}
-                          {getStatusBadge(doc.status)}
-                        </div>
-                        
-                        {/* Document Info */}
-                        <div className="space-y-2 text-sm text-muted-foreground">
-                          {doc.filename && (
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-3 w-3" />
-                              <span className="truncate">{doc.filename}</span>
-                            </div>
-                          )}
+                      
+                      {/* Document Info */}
+                      <div className="space-y-2 text-sm text-muted-foreground">
+                        {doc.filename && (
                           <div className="flex items-center gap-2">
-                            <Calendar className="h-3 w-3" />
-                            <span>{new Date(doc.created_at).toLocaleDateString()}</span>
+                            <FileText className="h-3 w-3" />
+                            <span className="truncate">{doc.filename}</span>
                           </div>
-                          {doc.chunk_count && (
-                            <div className="flex items-center gap-2">
-                              <Tag className="h-3 w-3" />
-                              <span>{doc.chunk_count} sections</span>
-                            </div>
-                          )}
+                        )}
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-3 w-3" />
+                          <span>{new Date(doc.created_at).toLocaleDateString()}</span>
                         </div>
-                        
-                        {/* Tags */}
-                        {doc.tags && (
-                          <div className="flex flex-wrap gap-1">
-                            {doc.tags.split(',').slice(0, 3).map((tag, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs">
-                                {tag.trim()}
-                              </Badge>
-                            ))}
+                        {doc.chunk_count && (
+                          <div className="flex items-center gap-2">
+                            <Tag className="h-3 w-3" />
+                            <span>{doc.chunk_count} sections</span>
                           </div>
                         )}
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      
+                      {/* Tags */}
+                      {doc.tags && (
+                        <div className="flex flex-wrap gap-1">
+                          {doc.tags.split(',').slice(0, 3).map((tag, index) => (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {tag.trim()}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
             )}
           </>
         )}
