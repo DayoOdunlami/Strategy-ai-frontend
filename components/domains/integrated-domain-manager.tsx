@@ -228,6 +228,45 @@ export function IntegratedDomainManager() {
     setExpandedDomains(newExpanded)
   }
 
+  const startEditing = (itemId: string, field: string) => {
+    setEditing(prev => ({
+      ...prev,
+      [itemId]: { ...prev[itemId], [field]: true }
+    }))
+  }
+
+  const stopEditing = (itemId: string, field: string) => {
+    setEditing(prev => ({
+      ...prev,
+      [itemId]: { ...prev[itemId], [field]: false }
+    }))
+  }
+
+  const saveFieldEdit = async (itemId: string, field: string, value: string) => {
+    try {
+      // TODO: Implement API call to update field
+      // await apiClient.domains.update(itemId, { [field]: value })
+      
+      // Update local state for demo
+      setDomains(prev => prev.map(domain => {
+        if (domain.id === itemId) {
+          return { ...domain, [field]: value, updated_at: new Date().toISOString() }
+        }
+        // Also check use cases
+        return {
+          ...domain,
+          use_cases: domain.use_cases.map(uc => 
+            uc.id === itemId ? { ...uc, [field]: value, updated_at: new Date().toISOString() } : uc
+          )
+        }
+      }))
+      
+      stopEditing(itemId, field)
+    } catch (error) {
+      console.error("Failed to save edit:", error)
+    }
+  }
+
   const handleCopyDomain = async (domain: Domain) => {
     try {
       const newDomain = {
@@ -314,6 +353,99 @@ export function IntegratedDomainManager() {
       return <Badge variant="outline" className="bg-yellow-100 text-yellow-700">No Documents</Badge>
     }
     return <Badge variant="outline" className="bg-green-100 text-green-700">Active</Badge>
+  }
+
+  const EditableCell = ({ 
+    itemId, 
+    field, 
+    value, 
+    type = "text",
+    options = []
+  }: { 
+    itemId: string
+    field: string
+    value: string
+    type?: "text" | "textarea" | "select" | "color"
+    options?: { value: string; label: string }[]
+  }) => {
+    const [editValue, setEditValue] = useState(value)
+    const isEditing = editing[itemId]?.[field]
+
+    if (!isEditing) {
+      return (
+        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => startEditing(itemId, field)}>
+          <span className={field === "color" ? "flex items-center gap-2" : ""}>
+            {field === "color" && (
+              <div className="w-4 h-4 rounded border" style={{ backgroundColor: value }} />
+            )}
+            {type === "textarea" ? (
+              <span className="line-clamp-2">{value}</span>
+            ) : (
+              value
+            )}
+          </span>
+          <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100" />
+        </div>
+      )
+    }
+
+    const handleSave = () => {
+      saveFieldEdit(itemId, field, editValue)
+    }
+
+    const handleCancel = () => {
+      setEditValue(value)
+      stopEditing(itemId, field)
+    }
+
+    return (
+      <div className="flex items-center gap-2">
+        {type === "select" ? (
+          <Select value={editValue} onValueChange={setEditValue}>
+            <SelectTrigger className="w-full h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : type === "color" ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              className="w-8 h-8 rounded border cursor-pointer"
+            />
+            <span className="text-sm font-mono">{editValue}</span>
+          </div>
+        ) : type === "textarea" ? (
+          <Textarea
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            className="w-full min-h-[60px]"
+            autoFocus
+          />
+        ) : (
+          <Input
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            className="w-full h-8"
+            autoFocus
+          />
+        )}
+        <Button size="sm" variant="ghost" onClick={handleSave}>
+          <Check className="h-3 w-3" />
+        </Button>
+        <Button size="sm" variant="ghost" onClick={handleCancel}>
+          <X className="h-3 w-3" />
+        </Button>
+      </div>
+    )
   }
 
   const getCategoryBadge = (category: string) => {
@@ -457,10 +589,19 @@ export function IntegratedDomainManager() {
                               <div>
                                 <div className="font-semibold flex items-center gap-2">
                                   <Globe className="h-4 w-4" />
-                                  {domain.name}
+                                  <EditableCell
+                                    itemId={domain.id}
+                                    field="name"
+                                    value={domain.name}
+                                  />
                                 </div>
                                 <div className="text-sm text-muted-foreground line-clamp-1">
-                                  {domain.description}
+                                  <EditableCell
+                                    itemId={domain.id}
+                                    field="description"
+                                    value={domain.description}
+                                    type="textarea"
+                                  />
                                 </div>
                               </div>
                             </div>
@@ -526,9 +667,20 @@ export function IntegratedDomainManager() {
                               <div className="flex items-center gap-3 pl-4">
                                 <Tag className="h-4 w-4 text-muted-foreground" />
                                 <div>
-                                  <div className="font-medium">{useCase.name}</div>
+                                  <div className="font-medium">
+                                    <EditableCell
+                                      itemId={useCase.id}
+                                      field="name"
+                                      value={useCase.name}
+                                    />
+                                  </div>
                                   <div className="text-sm text-muted-foreground line-clamp-1">
-                                    {useCase.description}
+                                    <EditableCell
+                                      itemId={useCase.id}
+                                      field="description"
+                                      value={useCase.description}
+                                      type="textarea"
+                                    />
                                   </div>
                                 </div>
                               </div>
