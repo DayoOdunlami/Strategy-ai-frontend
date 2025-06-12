@@ -413,6 +413,8 @@ const apiClient = {
   },
 
   // Domain and use case management
+  // TODO: TERMINOLOGY INCONSISTENCY - "domains" in API but "sectors" in database
+  // Need to standardize language across frontend/backend/database
   domains: {
     listWithUseCases: async () => {
       return apiCall('/domains/with-use-cases')
