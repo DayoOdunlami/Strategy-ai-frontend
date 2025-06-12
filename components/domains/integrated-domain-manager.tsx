@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { useDemoMode } from "@/lib/demo-mode"
+import { useToast } from "@/hooks/use-toast"
 import apiClient, { Domain, UseCase } from "@/lib/api-client"
 
 // Extended Domain interface with use_cases
@@ -46,6 +47,7 @@ export function IntegratedDomainManager() {
   const [itemToCopy, setItemToCopy] = useState<Domain | UseCase | null>(null)
   const [copyType, setCopyType] = useState<"domain" | "use-case">("domain")
   const { demoMode } = useDemoMode()
+  const { toast } = useToast()
   const [error, setError] = useState<string | null>(null)
 
   const [newItem, setNewItem] = useState({
@@ -276,6 +278,11 @@ export function IntegratedDomainManager() {
         await apiClient.domains.copy(domain.id, `${domain.name} (Copy)`)
         // Reload data to get the copied domain with its use cases
         await loadData()
+        // Show success message
+        toast({
+          title: "✅ Domain Copied Successfully",
+          description: `"${domain.name}" has been copied with all its use cases.`,
+        })
       } else {
         // Demo copy operation
         const newDomain = {
@@ -297,6 +304,11 @@ export function IntegratedDomainManager() {
         
         setDomains(prev => [...prev, newDomain])
         setExpandedDomains(prev => new Set([...prev, newDomain.id]))
+        // Show success message for demo
+        toast({
+          title: "✅ Domain Copied Successfully", 
+          description: `"${domain.name}" has been copied with all its use cases.`,
+        })
       }
     } catch (error) {
       console.error("Failed to copy domain:", error)
@@ -311,6 +323,12 @@ export function IntegratedDomainManager() {
         await apiClient.useCases.copy(useCase.id, targetDomainId, `${useCase.name} (Copy)`)
         // Reload data to get the copied use case
         await loadData()
+        // Show success message
+        const targetDomain = targetDomainId ? domains.find(d => d.id === targetDomainId)?.name : "same domain"
+        toast({
+          title: "✅ Use Case Copied Successfully",
+          description: `"${useCase.name}" has been copied to ${targetDomain}.`,
+        })
       } else {
         // Demo copy operation
         const newUseCase = {
@@ -328,6 +346,12 @@ export function IntegratedDomainManager() {
             ? { ...domain, use_cases: [...(domain.use_cases || []), newUseCase] }
             : domain
         ))
+        // Show success message for demo
+        const targetDomain = targetDomainId ? domains.find(d => d.id === targetDomainId)?.name : "same domain"
+        toast({
+          title: "✅ Use Case Copied Successfully",
+          description: `"${useCase.name}" has been copied to ${targetDomain}.`,
+        })
       }
     } catch (error) {
       console.error("Failed to copy use case:", error)
@@ -342,6 +366,12 @@ export function IntegratedDomainManager() {
         await apiClient.useCases.move(useCaseId, targetDomainId)
         // Reload data to reflect the move
         await loadData()
+        // Show success message
+        const targetDomain = domains.find(d => d.id === targetDomainId)?.name || "target domain"
+        toast({
+          title: "✅ Use Case Moved Successfully", 
+          description: `Use case has been moved to "${targetDomain}".`,
+        })
       } else {
         // Demo move operation
         let useCaseToMove: UseCase | null = null
@@ -366,6 +396,12 @@ export function IntegratedDomainManager() {
               ? { ...domain, use_cases: [...(domain.use_cases || []), useCaseToMove!] }
               : domain
           ))
+          // Show success message for demo
+          const targetDomain = domains.find(d => d.id === targetDomainId)?.name || "target domain"
+          toast({
+            title: "✅ Use Case Moved Successfully",
+            description: `Use case has been moved to "${targetDomain}".`,
+          })
         }
       }
     } catch (error) {
