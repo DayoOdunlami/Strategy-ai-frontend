@@ -503,6 +503,13 @@ export function IntegratedDomainManager() {
           <Textarea
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && e.ctrlKey) {
+                handleSave()
+              } else if (e.key === 'Escape') {
+                handleCancel()
+              }
+            }}
             className="w-full min-h-[60px]"
             autoFocus
           />
@@ -510,6 +517,13 @@ export function IntegratedDomainManager() {
           <Input
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleSave()
+              } else if (e.key === 'Escape') {
+                handleCancel()
+              }
+            }}
             className="w-full h-8"
             autoFocus
           />
@@ -606,6 +620,68 @@ export function IntegratedDomainManager() {
       console.error("Failed to delete use case:", error)
       setError("Failed to delete use case. Please try again.")
     }
+  }
+
+  const handleCreateDomain = async () => {
+    try {
+      if (!newItem.name.trim()) return
+
+      const domainData = {
+        name: newItem.name,
+        description: newItem.description,
+        color: newItem.color,
+        icon: newItem.icon
+      }
+
+      if (!demoMode) {
+        // Real API call to create domain
+        await apiClient.domains.create(domainData)
+        // Reload data to get the new domain
+        await loadData()
+        // Show success message
+        toast({
+          title: "✅ Domain Created Successfully",
+          description: `"${newItem.name}" has been created.`,
+        })
+      } else {
+        // Demo create operation
+        const newDomain: DomainWithUseCases = {
+          id: `domain_${Date.now()}`,
+          name: newItem.name,
+          description: newItem.description,
+          color: newItem.color,
+          icon: newItem.icon,
+          is_active: true,
+          document_count: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          use_cases: []
+        }
+        
+        setDomains(prev => [...prev, newDomain])
+        setExpandedDomains(prev => new Set([...prev, newDomain.id]))
+        // Show success message for demo
+        toast({
+          title: "✅ Domain Created Successfully",
+          description: `"${newItem.name}" has been created.`,
+        })
+      }
+
+      // Reset form and close dialog
+      setNewItem({ name: "", description: "", color: "#3B82F6", icon: "🏢", category: "General", domain_id: "" })
+      setShowCreateDialog(false)
+    } catch (error) {
+      console.error("Failed to create domain:", error)
+      setError("Failed to create domain. Please try again.")
+    }
+  }
+
+  const handleCreateUseCase = async (domainId: string) => {
+    // For now, just show a placeholder - we could add a use case creation dialog later
+    toast({
+      title: "Add Use Case",
+      description: "Use case creation dialog coming soon! For now, you can copy existing use cases.",
+    })
   }
 
   return (
@@ -790,7 +866,7 @@ export function IntegratedDomainManager() {
                                   <Copy className="h-4 w-4 mr-2" />
                                   Copy Domain + Use Cases
                                 </DropdownMenuItem>
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleCreateUseCase(domain.id)}>
                                   <Plus className="h-4 w-4 mr-2" />
                                   Add Use Case
                                 </DropdownMenuItem>
@@ -1016,7 +1092,7 @@ export function IntegratedDomainManager() {
                           <Copy className="h-3 w-3 mr-1" />
                           Copy
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleCreateUseCase(domain.id)}>
                           <Plus className="h-3 w-3 mr-1" />
                           Add Use Case
                         </Button>
@@ -1096,7 +1172,7 @@ export function IntegratedDomainManager() {
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
               Cancel
             </Button>
-            <Button disabled={!newItem.name}>
+            <Button disabled={!newItem.name} onClick={handleCreateDomain}>
               Create Domain
             </Button>
           </DialogFooter>
