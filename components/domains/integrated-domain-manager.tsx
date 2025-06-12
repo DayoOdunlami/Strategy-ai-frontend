@@ -16,30 +16,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { useDemoMode } from "@/lib/demo-mode"
+import apiClient, { Domain, UseCase } from "@/lib/api-client"
 
-interface Domain {
-  id: string
-  name: string
-  description: string
-  color: string
-  icon: string
-  is_active: boolean
-  document_count: number
-  created_at: string
-  updated_at: string
+// Extended Domain interface with use_cases
+interface DomainWithUseCases extends Domain {
   use_cases: UseCase[]
-}
-
-interface UseCase {
-  id: string
-  name: string
-  description: string
-  category: string
-  domain_id: string
-  is_active: boolean
-  document_count: number
-  created_at: string
-  updated_at: string
 }
 
 type ViewMode = "hierarchy" | "flat" | "cards"
@@ -56,7 +37,7 @@ export function IntegratedDomainManager() {
   const [selectedFilter, setSelectedFilter] = useState("all")
   const [sortBy, setSortBy] = useState("name")
   const [loading, setLoading] = useState(true)
-  const [domains, setDomains] = useState<Domain[]>([])
+  const [domains, setDomains] = useState<DomainWithUseCases[]>([])
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set())
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [editing, setEditing] = useState<EditingState>({})
@@ -65,6 +46,7 @@ export function IntegratedDomainManager() {
   const [itemToCopy, setItemToCopy] = useState<Domain | UseCase | null>(null)
   const [copyType, setCopyType] = useState<"domain" | "use-case">("domain")
   const { demoMode } = useDemoMode()
+  const [error, setError] = useState<string | null>(null)
 
   const [newItem, setNewItem] = useState({
     name: "",
@@ -75,8 +57,8 @@ export function IntegratedDomainManager() {
     domain_id: ""
   })
 
-  // Demo data with integrated structure
-  const demoDomains: Domain[] = [
+  // Demo data with integrated structure  
+  const demoDomains: DomainWithUseCases[] = [
     {
       id: "1",
       name: "Rail & Transit",
@@ -202,19 +184,29 @@ export function IntegratedDomainManager() {
   const loadData = async () => {
     try {
       setLoading(true)
+      setError(null)
       
-      // TODO: Implement real API calls
-      // const response = await apiClient.domains.listWithUseCases()
-      // setDomains(response.domains || [])
+      if (demoMode) {
+        // Use demo data in demo mode
+        setDomains(demoDomains)
+        setExpandedDomains(new Set(demoDomains.map(d => d.id)))
+      } else {
+        // Real API call to get domains with their use cases
+        const response = await apiClient.domains.listWithUseCases()
+        setDomains(response.domains || [])
+        // Auto-expand all domains to show relationships
+        setExpandedDomains(new Set((response.domains || []).map(d => d.id)))
+      }
       
-      // For now, use demo data
-      setDomains(demoDomains)
-      // Auto-expand all domains to show relationships
-      setExpandedDomains(new Set(demoDomains.map(d => d.id)))
       setLoading(false)
     } catch (error) {
       console.error("Failed to load data:", error)
+      setError("Failed to load domains and use cases. Please try again.")
       setLoading(false)
+      
+      // Fallback to demo data on error
+      setDomains(demoDomains)
+      setExpandedDomains(new Set(demoDomains.map(d => d.id)))
     }
   }
 
@@ -244,10 +236,19 @@ export function IntegratedDomainManager() {
 
   const saveFieldEdit = async (itemId: string, field: string, value: string) => {
     try {
-      // TODO: Implement API call to update field
-      // await apiClient.domains.update(itemId, { [field]: value })
+      if (!demoMode) {
+        // Check if it's a domain or use case
+        const isDomain = domains.some(d => d.id === itemId)
+        const isUseCase = domains.some(d => d.use_cases?.some(uc => uc.id === itemId))
+        
+        if (isDomain) {
+          await apiClient.domains.update(itemId, { [field]: value })
+        } else if (isUseCase) {
+          await apiClient.useCases.update(itemId, { [field]: value })
+        }
+      }
       
-      // Update local state for demo
+      // Update local state
       setDomains(prev => prev.map(domain => {
         if (domain.id === itemId) {
           return { ...domain, [field]: value, updated_at: new Date().toISOString() }
@@ -255,93 +256,121 @@ export function IntegratedDomainManager() {
         // Also check use cases
         return {
           ...domain,
-          use_cases: domain.use_cases.map(uc => 
+          use_cases: domain.use_cases?.map(uc => 
             uc.id === itemId ? { ...uc, [field]: value, updated_at: new Date().toISOString() } : uc
-          )
+          ) || []
         }
       }))
       
       stopEditing(itemId, field)
     } catch (error) {
       console.error("Failed to save edit:", error)
+      setError("Failed to save changes. Please try again.")
     }
   }
 
-  const handleCopyDomain = async (domain: Domain) => {
+  const handleCopyDomain = async (domain: DomainWithUseCases) => {
     try {
-      const newDomain = {
-        ...domain,
-        id: `copy_${domain.id}_${Date.now()}`,
-        name: `${domain.name} (Copy)`,
-        document_count: 0, // Copies don't inherit document links
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        use_cases: domain.use_cases.map(uc => ({
-          ...uc,
-          id: `copy_${uc.id}_${Date.now()}`,
-          domain_id: `copy_${domain.id}_${Date.now()}`,
-          document_count: 0,
+      if (!demoMode) {
+        // Real API call to copy domain
+        await apiClient.domains.copy(domain.id, `${domain.name} (Copy)`)
+        // Reload data to get the copied domain with its use cases
+        await loadData()
+      } else {
+        // Demo copy operation
+        const newDomain = {
+          ...domain,
+          id: `copy_${domain.id}_${Date.now()}`,
+          name: `${domain.name} (Copy)`,
+          document_count: 0, // Copies don't inherit document links
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }))
+          updated_at: new Date().toISOString(),
+          use_cases: domain.use_cases?.map(uc => ({
+            ...uc,
+            id: `copy_${uc.id}_${Date.now()}`,
+            domain_id: `copy_${domain.id}_${Date.now()}`,
+            document_count: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })) || []
+        }
+        
+        setDomains(prev => [...prev, newDomain])
+        setExpandedDomains(prev => new Set([...prev, newDomain.id]))
       }
-      
-      setDomains(prev => [...prev, newDomain])
-      setExpandedDomains(prev => new Set([...prev, newDomain.id]))
     } catch (error) {
       console.error("Failed to copy domain:", error)
+      setError("Failed to copy domain. Please try again.")
     }
   }
 
   const handleCopyUseCase = async (useCase: UseCase, targetDomainId?: string) => {
     try {
-      const newUseCase = {
-        ...useCase,
-        id: `copy_${useCase.id}_${Date.now()}`,
-        name: `${useCase.name} (Copy)`,
-        domain_id: targetDomainId || useCase.domain_id,
-        document_count: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+      if (!demoMode) {
+        // Real API call to copy use case
+        await apiClient.useCases.copy(useCase.id, targetDomainId, `${useCase.name} (Copy)`)
+        // Reload data to get the copied use case
+        await loadData()
+      } else {
+        // Demo copy operation
+        const newUseCase = {
+          ...useCase,
+          id: `copy_${useCase.id}_${Date.now()}`,
+          name: `${useCase.name} (Copy)`,
+          domain_id: targetDomainId || useCase.domain_id,
+          document_count: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+        
+        setDomains(prev => prev.map(domain => 
+          domain.id === newUseCase.domain_id 
+            ? { ...domain, use_cases: [...(domain.use_cases || []), newUseCase] }
+            : domain
+        ))
       }
-      
-      setDomains(prev => prev.map(domain => 
-        domain.id === newUseCase.domain_id 
-          ? { ...domain, use_cases: [...domain.use_cases, newUseCase] }
-          : domain
-      ))
     } catch (error) {
       console.error("Failed to copy use case:", error)
+      setError("Failed to copy use case. Please try again.")
     }
   }
 
   const handleMoveUseCase = async (useCaseId: string, targetDomainId: string) => {
     try {
-      let useCaseToMove: UseCase | null = null
-      
-      // Remove from current domain and get the use case
-      setDomains(prev => prev.map(domain => {
-        const useCaseIndex = domain.use_cases.findIndex(uc => uc.id === useCaseId)
-        if (useCaseIndex >= 0) {
-          useCaseToMove = { ...domain.use_cases[useCaseIndex], domain_id: targetDomainId }
-          return {
-            ...domain,
-            use_cases: domain.use_cases.filter(uc => uc.id !== useCaseId)
+      if (!demoMode) {
+        // Real API call to move use case
+        await apiClient.useCases.move(useCaseId, targetDomainId)
+        // Reload data to reflect the move
+        await loadData()
+      } else {
+        // Demo move operation
+        let useCaseToMove: UseCase | null = null
+        
+        // Remove from current domain and get the use case
+        setDomains(prev => prev.map(domain => {
+          const useCaseIndex = domain.use_cases?.findIndex(uc => uc.id === useCaseId) ?? -1
+          if (useCaseIndex >= 0 && domain.use_cases) {
+            useCaseToMove = { ...domain.use_cases[useCaseIndex], domain_id: targetDomainId }
+            return {
+              ...domain,
+              use_cases: domain.use_cases.filter(uc => uc.id !== useCaseId)
+            }
           }
+          return domain
+        }))
+        
+        // Add to target domain
+        if (useCaseToMove) {
+          setDomains(prev => prev.map(domain => 
+            domain.id === targetDomainId
+              ? { ...domain, use_cases: [...(domain.use_cases || []), useCaseToMove!] }
+              : domain
+          ))
         }
-        return domain
-      }))
-      
-      // Add to target domain
-      if (useCaseToMove) {
-        setDomains(prev => prev.map(domain => 
-          domain.id === targetDomainId
-            ? { ...domain, use_cases: [...domain.use_cases, useCaseToMove!] }
-            : domain
-        ))
       }
     } catch (error) {
       console.error("Failed to move use case:", error)
+      setError("Failed to move use case. Please try again.")
     }
   }
 
@@ -492,6 +521,24 @@ export function IntegratedDomainManager() {
           </Button>
         </div>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {error}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="ml-2" 
+              onClick={() => setError(null)}
+            >
+              Dismiss
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* View Controls */}
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">

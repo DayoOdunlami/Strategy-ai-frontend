@@ -4,7 +4,7 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://web-production-6045b.up.railway.app'
 
 export type Sector = "Rail" | "Maritime" | "Highways" | "General"
-export type UseCase =
+export type UseCaseType =
   | "strategy"
   | "general"
   | "Quick Playbook Answers"
@@ -17,10 +17,41 @@ export type UseCase =
 
 export type UserType = "public" | "admin" | "analyst"
 
+// Domain and Use Case Types
+export interface Domain {
+  id: string
+  name: string
+  description: string
+  color: string
+  icon: string
+  is_active: boolean
+  document_count: number
+  created_at: string
+  updated_at: string
+  use_cases?: UseCase[]
+}
+
+export interface UseCase {
+  id: string
+  name: string
+  description: string
+  category: string
+  domain_id: string
+  is_active: boolean
+  document_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface DomainWithUseCasesResponse {
+  domains: Domain[]
+  total_count: number
+}
+
 export interface ChatMessage {
   message: string
   sector?: Sector
-  use_case?: UseCase
+  use_case?: UseCaseType
   user_type?: UserType
   session_id?: string
   model?: string
@@ -377,6 +408,118 @@ const apiClient = {
       return apiCall('/agents/analyze', {
         method: 'POST',
         body: JSON.stringify(requestData),
+      })
+    },
+  },
+
+  // Domain and use case management
+  domains: {
+    listWithUseCases: async () => {
+      return apiCall('/domains/with-use-cases')
+    },
+
+    list: async () => {
+      return apiCall('/domains')
+    },
+
+    get: async (domainId: string) => {
+      return apiCall(`/domains/${domainId}`)
+    },
+
+    create: async (domain: {
+      name: string
+      description: string
+      color: string
+      icon: string
+    }) => {
+      return apiCall('/domains', {
+        method: 'POST',
+        body: JSON.stringify(domain),
+      })
+    },
+
+    update: async (domainId: string, updates: Partial<{
+      name: string
+      description: string
+      color: string
+      icon: string
+      is_active: boolean
+    }>) => {
+      return apiCall(`/domains/${domainId}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      })
+    },
+
+    delete: async (domainId: string) => {
+      return apiCall(`/domains/${domainId}`, {
+        method: 'DELETE',
+      })
+    },
+
+    copy: async (domainId: string, newName?: string) => {
+      return apiCall(`/domains/${domainId}/copy`, {
+        method: 'POST',
+        body: JSON.stringify({ name: newName }),
+      })
+    },
+  },
+
+  useCases: {
+    list: async (domainId?: string) => {
+      const url = domainId ? `/use-cases?domain_id=${domainId}` : '/use-cases'
+      return apiCall(url)
+    },
+
+    get: async (useCaseId: string) => {
+      return apiCall(`/use-cases/${useCaseId}`)
+    },
+
+    create: async (useCase: {
+      name: string
+      description: string
+      category: string
+      domain_id: string
+    }) => {
+      return apiCall('/use-cases', {
+        method: 'POST',
+        body: JSON.stringify(useCase),
+      })
+    },
+
+    update: async (useCaseId: string, updates: Partial<{
+      name: string
+      description: string
+      category: string
+      domain_id: string
+      is_active: boolean
+    }>) => {
+      return apiCall(`/use-cases/${useCaseId}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      })
+    },
+
+    delete: async (useCaseId: string) => {
+      return apiCall(`/use-cases/${useCaseId}`, {
+        method: 'DELETE',
+      })
+    },
+
+    copy: async (useCaseId: string, targetDomainId?: string, newName?: string) => {
+      return apiCall(`/use-cases/${useCaseId}/copy`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          domain_id: targetDomainId,
+          name: newName 
+        }),
+      })
+    },
+
+    move: async (useCaseId: string, targetDomainId: string) => {
+      return apiCall(`/use-cases/${useCaseId}/move`, {
+        method: 'PUT',
+        body: JSON.stringify({ domain_id: targetDomainId }),
       })
     },
   },
