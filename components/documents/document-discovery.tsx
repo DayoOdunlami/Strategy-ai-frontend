@@ -1,12 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Filter, FileText, Calendar, Tag, Eye } from "lucide-react"
+import { Search, Filter, FileText, Calendar, Tag, Eye, Grid, List, Edit2, Check, X, Download, Upload, Trash2, MoreVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import apiClient, { type Sector } from "@/lib/api-client"
 import { useDemoMode, DEMO_DATA } from "@/lib/demo-mode"
 
@@ -24,12 +27,24 @@ interface Document {
   updated_at: string
 }
 
+type ViewMode = "cards" | "table"
+
+interface EditingState {
+  [docId: string]: {
+    [field: string]: boolean
+  }
+}
+
 export function DocumentDiscovery() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedSector, setSelectedSector] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("recent")
+  const [viewMode, setViewMode] = useState<ViewMode>("cards")
+  const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set())
+  const [editingState, setEditingState] = useState<EditingState>({})
+  const [bulkEditMode, setBulkEditMode] = useState(false)
   const { useSampleData } = useDemoMode()
 
   useEffect(() => {
@@ -142,21 +157,212 @@ export function DocumentDiscovery() {
     )
   }
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedDocs(new Set(documents.map(doc => doc.id)))
+    } else {
+      setSelectedDocs(new Set())
+    }
+  }
+
+  const handleSelectDoc = (docId: string, checked: boolean) => {
+    const newSelected = new Set(selectedDocs)
+    if (checked) {
+      newSelected.add(docId)
+    } else {
+      newSelected.delete(docId)
+    }
+    setSelectedDocs(newSelected)
+  }
+
+  const startEditing = (docId: string, field: string) => {
+    setEditingState(prev => ({
+      ...prev,
+      [docId]: {
+        ...prev[docId],
+        [field]: true
+      }
+    }))
+  }
+
+  const stopEditing = (docId: string, field: string) => {
+    setEditingState(prev => ({
+      ...prev,
+      [docId]: {
+        ...prev[docId],
+        [field]: false
+      }
+    }))
+  }
+
+  const saveFieldEdit = async (docId: string, field: string, value: string) => {
+    try {
+      // Update local state immediately for responsiveness
+      setDocuments(prev => prev.map(doc => 
+        doc.id === docId ? { ...doc, [field]: value } : doc
+      ))
+      
+      // TODO: Make API call to update document
+      // await apiClient.documents.update(docId, { [field]: value })
+      
+      stopEditing(docId, field)
+      console.log(`Updated ${field} for doc ${docId} to: ${value}`)
+    } catch (error) {
+      console.error("Failed to update document:", error)
+      // Revert on error
+      loadDocuments()
+    }
+  }
+
+  const handleBulkAction = async (action: string) => {
+    const selectedIds = Array.from(selectedDocs)
+    console.log(`Bulk action: ${action} on docs:`, selectedIds)
+    
+    // TODO: Implement bulk actions
+    switch (action) {
+      case "delete":
+        // Bulk delete
+        break
+      case "export":
+        // Export selected documents to CSV
+        break
+      case "change-sector":
+        // Show bulk edit modal
+        setBulkEditMode(true)
+        break
+    }
+  }
+
+  const EditableCell = ({ 
+    docId, 
+    field, 
+    value, 
+    type = "text" 
+  }: { 
+    docId: string
+    field: string
+    value: string
+    type?: "text" | "select"
+  }) => {
+    const isEditing = editingState[docId]?.[field]
+    const [editValue, setEditValue] = useState(value)
+
+    if (!isEditing) {
+      return (
+        <div 
+          className="cursor-pointer hover:bg-muted p-1 rounded"
+          onClick={() => startEditing(docId, field)}
+        >
+          {value || "—"}
+          <Edit2 className="inline ml-2 h-3 w-3 opacity-50" />
+        </div>
+      )
+    }
+
+    if (type === "select" && field === "sector") {
+      return (
+        <div className="flex items-center gap-2">
+          <Select value={editValue} onValueChange={setEditValue}>
+            <SelectTrigger className="h-8 w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="rail">Rail</SelectItem>
+              <SelectItem value="maritime">Maritime</SelectItem>
+              <SelectItem value="highways">Highways</SelectItem>
+              <SelectItem value="general">General</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button 
+            size="sm" 
+            variant="ghost"
+            onClick={() => saveFieldEdit(docId, field, editValue)}
+          >
+            <Check className="h-3 w-3" />
+          </Button>
+          <Button 
+            size="sm" 
+            variant="ghost"
+            onClick={() => stopEditing(docId, field)}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      )
+    }
+
+    return (
+      <div className="flex items-center gap-2">
+        <Input
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          className="h-8 w-48"
+          onBlur={() => saveFieldEdit(docId, field, editValue)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              saveFieldEdit(docId, field, editValue)
+            } else if (e.key === "Escape") {
+              stopEditing(docId, field)
+              setEditValue(value)
+            }
+          }}
+          autoFocus
+        />
+        <Button 
+          size="sm" 
+          variant="ghost"
+          onClick={() => saveFieldEdit(docId, field, editValue)}
+        >
+          <Check className="h-3 w-3" />
+        </Button>
+        <Button 
+          size="sm" 
+          variant="ghost"
+          onClick={() => stopEditing(docId, field)}
+        >
+          <X className="h-3 w-3" />
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Demo Mode Indicator */}
       {useSampleData && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <p className="text-sm text-blue-800">
-            🔍 <strong>Demo Mode:</strong> Displaying sample search results
+            🔍 <strong>Demo Mode:</strong> Displaying sample search results with live editing
           </p>
         </div>
       )}
 
       {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Discover Documents</h1>
-        <p className="text-muted-foreground">Find and explore your strategic documents with enhanced search</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold">Discover Documents</h1>
+          <p className="text-muted-foreground">Find and explore your strategic documents with enhanced search</p>
+        </div>
+        
+        {/* View Toggle */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant={viewMode === "cards" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("cards")}
+          >
+            <Grid className="h-4 w-4 mr-2" />
+            Cards
+          </Button>
+          <Button
+            variant={viewMode === "table" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("table")}
+          >
+            <List className="h-4 w-4 mr-2" />
+            Table
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -199,10 +405,52 @@ export function DocumentDiscovery() {
                   <SelectItem value="relevance">Relevance</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Enable Live Editing */}
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="live-editing" 
+                  checked={viewMode === "table"} 
+                  onCheckedChange={(checked) => setViewMode(checked ? "table" : "cards")}
+                />
+                <label htmlFor="live-editing" className="text-sm font-medium">
+                  Enable Live Editing
+                </label>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Bulk Actions Bar */}
+      {selectedDocs.size > 0 && (
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">
+                {selectedDocs.size} document{selectedDocs.size !== 1 ? 's' : ''} selected
+              </span>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={() => handleBulkAction("export")}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => handleBulkAction("change-sector")}>
+                  <Edit2 className="h-4 w-4 mr-2" />
+                  Bulk Edit
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => handleBulkAction("delete")}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setSelectedDocs(new Set())}>
+                  Clear Selection
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search Results */}
       <div className="space-y-4">
@@ -228,65 +476,181 @@ export function DocumentDiscovery() {
                 Found {documents.length} document{documents.length !== 1 ? 's' : ''}
                 {searchQuery && ` for "${searchQuery}"`}
               </p>
+              <Button size="sm" variant="outline">
+                <Upload className="h-4 w-4 mr-2" />
+                Import CSV
+              </Button>
             </div>
             
-            {/* Document Grid */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {documents.map((doc) => (
-                <Card key={doc.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="text-base leading-tight">
-                        {doc.title}
-                      </CardTitle>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {/* Badges */}
-                      <div className="flex flex-wrap gap-2">
-                        {getSectorBadge(doc.sector)}
-                        {getStatusBadge(doc.status)}
+            {/* Table View */}
+            {viewMode === "table" ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={selectedDocs.size === documents.length}
+                            indeterminate={selectedDocs.size > 0 && selectedDocs.size < documents.length}
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </TableHead>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Sector</TableHead>
+                        <TableHead>Use Case</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Chunks</TableHead>
+                        <TableHead>Tags</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {documents.map((doc) => (
+                        <TableRow key={doc.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedDocs.has(doc.id)}
+                              onCheckedChange={(checked) => handleSelectDoc(doc.id, checked as boolean)}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium max-w-64">
+                            <EditableCell
+                              docId={doc.id}
+                              field="title"
+                              value={doc.title}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <EditableCell
+                              docId={doc.id}
+                              field="sector"
+                              value={doc.sector}
+                              type="select"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <EditableCell
+                              docId={doc.id}
+                              field="use_case"
+                              value={doc.use_case || "—"}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(doc.status)}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(doc.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            {doc.chunk_count}
+                          </TableCell>
+                          <TableCell className="max-w-48">
+                            <EditableCell
+                              docId={doc.id}
+                              field="tags"
+                              value={doc.tags || ""}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Preview
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Edit2 className="h-4 w-4 mr-2" />
+                                  Edit Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <FileText className="h-4 w-4 mr-2" />
+                                  View Chunks
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-red-600">
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            ) : (
+              /* Card View */
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {documents.map((doc) => (
+                  <Card key={doc.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3 flex-1">
+                          <Checkbox
+                            checked={selectedDocs.has(doc.id)}
+                            onCheckedChange={(checked) => handleSelectDoc(doc.id, checked as boolean)}
+                          />
+                          <CardTitle className="text-base leading-tight">
+                            {doc.title}
+                          </CardTitle>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
                       </div>
-                      
-                      {/* Document Info */}
-                      <div className="space-y-2 text-sm text-muted-foreground">
-                        {doc.filename && (
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {/* Badges */}
+                        <div className="flex flex-wrap gap-2">
+                          {getSectorBadge(doc.sector)}
+                          {getStatusBadge(doc.status)}
+                        </div>
+                        
+                        {/* Document Info */}
+                        <div className="space-y-2 text-sm text-muted-foreground">
+                          {doc.filename && (
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-3 w-3" />
+                              <span className="truncate">{doc.filename}</span>
+                            </div>
+                          )}
                           <div className="flex items-center gap-2">
-                            <FileText className="h-3 w-3" />
-                            <span className="truncate">{doc.filename}</span>
+                            <Calendar className="h-3 w-3" />
+                            <span>{new Date(doc.created_at).toLocaleDateString()}</span>
+                          </div>
+                          {doc.chunk_count && (
+                            <div className="flex items-center gap-2">
+                              <Tag className="h-3 w-3" />
+                              <span>{doc.chunk_count} sections</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Tags */}
+                        {doc.tags && (
+                          <div className="flex flex-wrap gap-1">
+                            {doc.tags.split(',').slice(0, 3).map((tag, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {tag.trim()}
+                              </Badge>
+                            ))}
                           </div>
                         )}
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-3 w-3" />
-                          <span>{new Date(doc.created_at).toLocaleDateString()}</span>
-                        </div>
-                        {doc.chunk_count && (
-                          <div className="flex items-center gap-2">
-                            <Tag className="h-3 w-3" />
-                            <span>{doc.chunk_count} sections</span>
-                          </div>
-                        )}
                       </div>
-                      
-                      {/* Tags */}
-                      {doc.tags && (
-                        <div className="flex flex-wrap gap-1">
-                          {doc.tags.split(',').slice(0, 3).map((tag, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                              {tag.trim()}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>
