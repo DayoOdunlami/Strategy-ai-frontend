@@ -10,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import apiClient, { type Sector } from "@/lib/api-client"
 import { useDemoMode, DEMO_DATA } from "@/lib/demo-mode"
 
@@ -45,6 +48,12 @@ export function DocumentDiscovery() {
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set())
   const [editingState, setEditingState] = useState<EditingState>({})
   const [bulkEditMode, setBulkEditMode] = useState(false)
+  const [bulkEditData, setBulkEditData] = useState({
+    sector: "",
+    use_case: "",
+    tags: "",
+    status: ""
+  })
   const { useSampleData } = useDemoMode()
 
   useEffect(() => {
@@ -218,19 +227,89 @@ export function DocumentDiscovery() {
     const selectedIds = Array.from(selectedDocs)
     console.log(`Bulk action: ${action} on docs:`, selectedIds)
     
-    // TODO: Implement bulk actions
     switch (action) {
       case "delete":
-        // Bulk delete
+        if (confirm(`Are you sure you want to delete ${selectedIds.length} documents?`)) {
+          // TODO: Implement bulk delete API call
+          console.log("Bulk deleting:", selectedIds)
+        }
         break
       case "export":
-        // Export selected documents to CSV
+        exportToCSV(selectedIds)
         break
-      case "change-sector":
-        // Show bulk edit modal
+      case "bulk-edit":
         setBulkEditMode(true)
         break
     }
+  }
+
+  const handleBulkEdit = async () => {
+    const selectedIds = Array.from(selectedDocs)
+    const updates: any = {}
+    
+    // Only include fields that have values
+    if (bulkEditData.sector && bulkEditData.sector !== "") {
+      updates.sector = bulkEditData.sector
+    }
+    if (bulkEditData.use_case && bulkEditData.use_case !== "") {
+      updates.use_case = bulkEditData.use_case
+    }
+    if (bulkEditData.tags && bulkEditData.tags !== "") {
+      updates.tags = bulkEditData.tags
+    }
+    if (bulkEditData.status && bulkEditData.status !== "") {
+      updates.status = bulkEditData.status
+    }
+
+    try {
+      // Update local state immediately for responsiveness
+      setDocuments(prev => prev.map(doc => 
+        selectedIds.includes(doc.id) ? { ...doc, ...updates } : doc
+      ))
+
+      // TODO: Make API call to update multiple documents
+      // await apiClient.documents.bulkUpdate(selectedIds, updates)
+      
+      console.log(`Bulk updated ${selectedIds.length} documents:`, updates)
+      
+      // Reset bulk edit state
+      setBulkEditMode(false)
+      setBulkEditData({ sector: "", use_case: "", tags: "", status: "" })
+      setSelectedDocs(new Set())
+      
+    } catch (error) {
+      console.error("Failed to bulk update documents:", error)
+      // Revert on error
+      loadDocuments()
+    }
+  }
+
+  const exportToCSV = (selectedIds: string[]) => {
+    const selectedDocuments = documents.filter(doc => selectedIds.includes(doc.id))
+    
+    const csvHeaders = ["ID", "Title", "Sector", "Use Case", "Tags", "Status", "Date", "Chunks"]
+    const csvData = selectedDocuments.map(doc => [
+      doc.id,
+      `"${doc.title}"`,
+      doc.sector,
+      doc.use_case || "",
+      `"${doc.tags || ""}"`,
+      doc.status,
+      new Date(doc.created_at).toLocaleDateString(),
+      doc.chunk_count
+    ])
+
+    const csvContent = [csvHeaders.join(","), ...csvData.map(row => row.join(","))].join("\n")
+    
+    const blob = new Blob([csvContent], { type: "text/csv" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `documents-export-${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+    
+    console.log(`Exported ${selectedIds.length} documents to CSV`)
   }
 
   const EditableCell = ({ 
@@ -435,7 +514,7 @@ export function DocumentDiscovery() {
                   <Download className="h-4 w-4 mr-2" />
                   Export CSV
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleBulkAction("change-sector")}>
+                <Button size="sm" variant="outline" onClick={() => handleBulkAction("bulk-edit")}>
                   <Edit2 className="h-4 w-4 mr-2" />
                   Bulk Edit
                 </Button>
@@ -654,6 +733,95 @@ export function DocumentDiscovery() {
           </>
         )}
       </div>
+
+      {/* Bulk Edit Modal */}
+      <Dialog open={bulkEditMode} onOpenChange={setBulkEditMode}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Bulk Edit Documents</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Editing {selectedDocs.size} selected document{selectedDocs.size !== 1 ? 's' : ''}. 
+              Leave fields empty to keep existing values.
+            </p>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="bulk-sector">Sector</Label>
+              <Select value={bulkEditData.sector} onValueChange={(value) => 
+                setBulkEditData(prev => ({ ...prev, sector: value }))
+              }>
+                <SelectTrigger>
+                  <SelectValue placeholder="Keep existing sectors" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Keep existing</SelectItem>
+                  <SelectItem value="rail">Rail</SelectItem>
+                  <SelectItem value="maritime">Maritime</SelectItem>
+                  <SelectItem value="highways">Highways</SelectItem>
+                  <SelectItem value="general">General</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="bulk-use-case">Use Case</Label>
+              <Input
+                id="bulk-use-case"
+                placeholder="Keep existing use cases"
+                value={bulkEditData.use_case}
+                onChange={(e) => setBulkEditData(prev => ({ ...prev, use_case: e.target.value }))}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="bulk-status">Status</Label>
+              <Select value={bulkEditData.status} onValueChange={(value) => 
+                setBulkEditData(prev => ({ ...prev, status: value }))
+              }>
+                <SelectTrigger>
+                  <SelectValue placeholder="Keep existing status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Keep existing</SelectItem>
+                  <SelectItem value="ready">Ready</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="error">Error</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="bulk-tags">Tags</Label>
+              <Textarea
+                id="bulk-tags"
+                placeholder="Add or replace tags (comma separated)"
+                value={bulkEditData.tags}
+                onChange={(e) => setBulkEditData(prev => ({ ...prev, tags: e.target.value }))}
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                This will replace existing tags. Leave empty to keep current tags.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setBulkEditMode(false)
+                setBulkEditData({ sector: "", use_case: "", tags: "", status: "" })
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleBulkEdit}>
+              Update {selectedDocs.size} Document{selectedDocs.size !== 1 ? 's' : ''}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 
