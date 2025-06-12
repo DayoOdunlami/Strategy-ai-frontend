@@ -53,10 +53,10 @@ export function DocumentDiscovery() {
   const [editingState, setEditingState] = useState<EditingState>({})
   const [bulkEditMode, setBulkEditMode] = useState(false)
   const [bulkEditData, setBulkEditData] = useState({
-    sector: "",
-    use_case: "",
+    sector: "keep-existing",
+    use_case: "keep-existing",
     tags: "",
-    status: ""
+    status: "keep-existing"
   })
   const [visibleColumns, setVisibleColumns] = useState({
     title: true,
@@ -326,17 +326,17 @@ export function DocumentDiscovery() {
     const selectedIds = Array.from(selectedDocs)
     const updates: any = {}
     
-    // Only include fields that have values
-    if (bulkEditData.sector && bulkEditData.sector !== "") {
+    // Only include fields that have values and are not "keep-existing"
+    if (bulkEditData.sector && bulkEditData.sector !== "" && bulkEditData.sector !== "keep-existing") {
       updates.sector = bulkEditData.sector
     }
-    if (bulkEditData.use_case && bulkEditData.use_case !== "") {
+    if (bulkEditData.use_case && bulkEditData.use_case !== "" && bulkEditData.use_case !== "keep-existing") {
       updates.use_case = bulkEditData.use_case
     }
     if (bulkEditData.tags && bulkEditData.tags !== "") {
       updates.tags = bulkEditData.tags
     }
-    if (bulkEditData.status && bulkEditData.status !== "") {
+    if (bulkEditData.status && bulkEditData.status !== "" && bulkEditData.status !== "keep-existing") {
       updates.status = bulkEditData.status
     }
 
@@ -923,7 +923,7 @@ export function DocumentDiscovery() {
                   <SelectValue placeholder="Keep existing sectors" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Keep existing</SelectItem>
+                  <SelectItem value="keep-existing">Keep existing</SelectItem>
                   <SelectItem value="rail">Rail</SelectItem>
                   <SelectItem value="maritime">Maritime</SelectItem>
                   <SelectItem value="highways">Highways</SelectItem>
@@ -941,7 +941,7 @@ export function DocumentDiscovery() {
                   <SelectValue placeholder="Keep existing use cases" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Keep existing</SelectItem>
+                  <SelectItem value="keep-existing">Keep existing</SelectItem>
                   {bulkEditData.sector ? (
                     getUseCaseOptions(bulkEditData.sector).map(useCase => (
                       <SelectItem key={useCase} value={useCase}>
@@ -973,7 +973,7 @@ export function DocumentDiscovery() {
                   <SelectValue placeholder="Keep existing status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Keep existing</SelectItem>
+                  <SelectItem value="keep-existing">Keep existing</SelectItem>
                   <SelectItem value="ready">Ready</SelectItem>
                   <SelectItem value="processing">Processing</SelectItem>
                   <SelectItem value="error">Error</SelectItem>
@@ -1001,7 +1001,7 @@ export function DocumentDiscovery() {
               variant="outline" 
               onClick={() => {
                 setBulkEditMode(false)
-                setBulkEditData({ sector: "", use_case: "", tags: "", status: "" })
+                setBulkEditData({ sector: "keep-existing", use_case: "keep-existing", tags: "", status: "keep-existing" })
               }}
             >
               Cancel
