@@ -1,0 +1,782 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Search, Filter, Globe, ChevronDown, ChevronRight, Tag, Eye, Grid, List, Edit2, Check, X, Download, Copy, Trash2, MoreVertical, Plus, AlertTriangle, Move, Users } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { useDemoMode } from "@/lib/demo-mode"
+
+interface Domain {
+  id: string
+  name: string
+  description: string
+  color: string
+  icon: string
+  is_active: boolean
+  document_count: number
+  created_at: string
+  updated_at: string
+  use_cases: UseCase[]
+}
+
+interface UseCase {
+  id: string
+  name: string
+  description: string
+  category: string
+  domain_id: string
+  is_active: boolean
+  document_count: number
+  created_at: string
+  updated_at: string
+}
+
+type ViewMode = "hierarchy" | "flat" | "cards"
+
+interface EditingState {
+  [itemId: string]: {
+    [field: string]: boolean
+  }
+}
+
+export function IntegratedDomainManager() {
+  const [viewMode, setViewMode] = useState<ViewMode>("hierarchy")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedFilter, setSelectedFilter] = useState("all")
+  const [sortBy, setSortBy] = useState("name")
+  const [loading, setLoading] = useState(true)
+  const [domains, setDomains] = useState<Domain[]>([])
+  const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set())
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+  const [editing, setEditing] = useState<EditingState>({})
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [showCopyDialog, setShowCopyDialog] = useState(false)
+  const [itemToCopy, setItemToCopy] = useState<Domain | UseCase | null>(null)
+  const [copyType, setCopyType] = useState<"domain" | "use-case">("domain")
+  const { demoMode } = useDemoMode()
+
+  const [newItem, setNewItem] = useState({
+    name: "",
+    description: "",
+    color: "#3B82F6",
+    icon: "🏢",
+    category: "General",
+    domain_id: ""
+  })
+
+  // Demo data with integrated structure
+  const demoDomains: Domain[] = [
+    {
+      id: "1",
+      name: "Rail & Transit",
+      description: "Railway infrastructure, stations, and transit systems",
+      color: "#8B5CF6",
+      icon: "🚆",
+      is_active: true,
+      document_count: 45,
+      created_at: "2024-01-15T10:00:00Z",
+      updated_at: "2024-01-20T14:30:00Z",
+      use_cases: [
+        {
+          id: "uc1",
+          name: "Strategy Development",
+          description: "Strategic planning and high-level decision making",
+          category: "Strategic",
+          domain_id: "1",
+          is_active: true,
+          document_count: 12,
+          created_at: "2024-01-15T10:00:00Z",
+          updated_at: "2024-01-20T14:30:00Z"
+        },
+        {
+          id: "uc2",
+          name: "Infrastructure Planning",
+          description: "Plan and assess infrastructure projects",
+          category: "Operational",
+          domain_id: "1",
+          is_active: true,
+          document_count: 18,
+          created_at: "2024-01-15T10:00:00Z",
+          updated_at: "2024-01-19T11:20:00Z"
+        },
+        {
+          id: "uc3",
+          name: "Safety & Compliance",
+          description: "Safety protocols and regulatory compliance",
+          category: "Assessment",
+          domain_id: "1",
+          is_active: true,
+          document_count: 15,
+          created_at: "2024-01-15T10:00:00Z",
+          updated_at: "2024-01-18T15:45:00Z"
+        }
+      ]
+    },
+    {
+      id: "2",
+      name: "Highway & Roads",
+      description: "Road infrastructure, traffic management, and highway systems",
+      color: "#F59E0B",
+      icon: "🛣️",
+      is_active: true,
+      document_count: 32,
+      created_at: "2024-01-15T10:00:00Z",
+      updated_at: "2024-01-18T09:15:00Z",
+      use_cases: [
+        {
+          id: "uc4",
+          name: "Traffic Management",
+          description: "Optimize traffic flow and management systems",
+          category: "Operational",
+          domain_id: "2",
+          is_active: true,
+          document_count: 22,
+          created_at: "2024-01-15T10:00:00Z",
+          updated_at: "2024-01-21T09:30:00Z"
+        },
+        {
+          id: "uc5",
+          name: "Smart Infrastructure",
+          description: "IoT and smart road technologies",
+          category: "Strategic",
+          domain_id: "2",
+          is_active: true,
+          document_count: 10,
+          created_at: "2024-01-16T14:00:00Z",
+          updated_at: "2024-01-21T16:20:00Z"
+        }
+      ]
+    },
+    {
+      id: "3",
+      name: "Maritime",
+      description: "Ports, shipping, and maritime transportation systems",
+      color: "#06B6D4",
+      icon: "⚓",
+      is_active: true,
+      document_count: 28,
+      created_at: "2024-01-15T10:00:00Z",
+      updated_at: "2024-01-19T16:45:00Z",
+      use_cases: [
+        {
+          id: "uc6",
+          name: "Port Operations",
+          description: "Harbor and port facility management",
+          category: "Operational",
+          domain_id: "3",
+          is_active: true,
+          document_count: 16,
+          created_at: "2024-01-15T10:00:00Z",
+          updated_at: "2024-01-20T16:15:00Z"
+        },
+        {
+          id: "uc7",
+          name: "Shipping Analytics",
+          description: "Maritime logistics and shipping optimization",
+          category: "Analysis",
+          domain_id: "3",
+          is_active: true,
+          document_count: 12,
+          created_at: "2024-01-16T11:00:00Z",
+          updated_at: "2024-01-20T13:45:00Z"
+        }
+      ]
+    }
+  ]
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      
+      // TODO: Implement real API calls
+      // const response = await apiClient.domains.listWithUseCases()
+      // setDomains(response.domains || [])
+      
+      // For now, use demo data
+      setDomains(demoDomains)
+      // Auto-expand all domains to show relationships
+      setExpandedDomains(new Set(demoDomains.map(d => d.id)))
+      setLoading(false)
+    } catch (error) {
+      console.error("Failed to load data:", error)
+      setLoading(false)
+    }
+  }
+
+  const toggleDomainExpansion = (domainId: string) => {
+    const newExpanded = new Set(expandedDomains)
+    if (newExpanded.has(domainId)) {
+      newExpanded.delete(domainId)
+    } else {
+      newExpanded.add(domainId)
+    }
+    setExpandedDomains(newExpanded)
+  }
+
+  const handleCopyDomain = async (domain: Domain) => {
+    try {
+      const newDomain = {
+        ...domain,
+        id: `copy_${domain.id}_${Date.now()}`,
+        name: `${domain.name} (Copy)`,
+        document_count: 0, // Copies don't inherit document links
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        use_cases: domain.use_cases.map(uc => ({
+          ...uc,
+          id: `copy_${uc.id}_${Date.now()}`,
+          domain_id: `copy_${domain.id}_${Date.now()}`,
+          document_count: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }))
+      }
+      
+      setDomains(prev => [...prev, newDomain])
+      setExpandedDomains(prev => new Set([...prev, newDomain.id]))
+    } catch (error) {
+      console.error("Failed to copy domain:", error)
+    }
+  }
+
+  const handleCopyUseCase = async (useCase: UseCase, targetDomainId?: string) => {
+    try {
+      const newUseCase = {
+        ...useCase,
+        id: `copy_${useCase.id}_${Date.now()}`,
+        name: `${useCase.name} (Copy)`,
+        domain_id: targetDomainId || useCase.domain_id,
+        document_count: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      
+      setDomains(prev => prev.map(domain => 
+        domain.id === newUseCase.domain_id 
+          ? { ...domain, use_cases: [...domain.use_cases, newUseCase] }
+          : domain
+      ))
+    } catch (error) {
+      console.error("Failed to copy use case:", error)
+    }
+  }
+
+  const handleMoveUseCase = async (useCaseId: string, targetDomainId: string) => {
+    try {
+      let useCaseToMove: UseCase | null = null
+      
+      // Remove from current domain and get the use case
+      setDomains(prev => prev.map(domain => {
+        const useCaseIndex = domain.use_cases.findIndex(uc => uc.id === useCaseId)
+        if (useCaseIndex >= 0) {
+          useCaseToMove = { ...domain.use_cases[useCaseIndex], domain_id: targetDomainId }
+          return {
+            ...domain,
+            use_cases: domain.use_cases.filter(uc => uc.id !== useCaseId)
+          }
+        }
+        return domain
+      }))
+      
+      // Add to target domain
+      if (useCaseToMove) {
+        setDomains(prev => prev.map(domain => 
+          domain.id === targetDomainId
+            ? { ...domain, use_cases: [...domain.use_cases, useCaseToMove!] }
+            : domain
+        ))
+      }
+    } catch (error) {
+      console.error("Failed to move use case:", error)
+    }
+  }
+
+  const getStatusBadge = (isActive: boolean, documentCount: number) => {
+    if (!isActive) {
+      return <Badge variant="outline" className="bg-gray-100 text-gray-600">Inactive</Badge>
+    }
+    if (documentCount === 0) {
+      return <Badge variant="outline" className="bg-yellow-100 text-yellow-700">No Documents</Badge>
+    }
+    return <Badge variant="outline" className="bg-green-100 text-green-700">Active</Badge>
+  }
+
+  const getCategoryBadge = (category: string) => {
+    const colors = {
+      Strategic: "bg-purple-100 text-purple-700",
+      Operational: "bg-blue-100 text-blue-700", 
+      Assessment: "bg-green-100 text-green-700",
+      Knowledge: "bg-orange-100 text-orange-700",
+      Analysis: "bg-cyan-100 text-cyan-700",
+      General: "bg-gray-100 text-gray-700"
+    }
+    
+    return (
+      <Badge variant="outline" className={colors[category as keyof typeof colors] || colors.General}>
+        {category}
+      </Badge>
+    )
+  }
+
+  const filteredDomains = domains.filter(domain => {
+    if (!searchQuery) return true
+    return domain.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           domain.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           domain.use_cases.some(uc => 
+             uc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+             uc.description.toLowerCase().includes(searchQuery.toLowerCase())
+           )
+  })
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Integrated Domain Management</h1>
+          <p className="text-muted-foreground">
+            Manage domains and use cases with hierarchical relationships and easy duplication
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setShowCreateDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Domain
+          </Button>
+        </div>
+      </div>
+
+      {/* View Controls */}
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search domains and use cases..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 w-[300px]"
+            />
+          </div>
+          
+          <Select value={selectedFilter} onValueChange={setSelectedFilter}>
+            <SelectTrigger className="w-[150px]">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Items</SelectItem>
+              <SelectItem value="active">Active Only</SelectItem>
+              <SelectItem value="with-documents">With Documents</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant={viewMode === "hierarchy" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("hierarchy")}
+          >
+            <List className="h-4 w-4 mr-1" />
+            Hierarchy
+          </Button>
+          <Button
+            variant={viewMode === "cards" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("cards")}
+          >
+            <Grid className="h-4 w-4 mr-1" />
+            Cards
+          </Button>
+        </div>
+      </div>
+
+      {/* Content */}
+      {loading ? (
+        <div className="flex items-center justify-center h-32">
+          <div className="text-muted-foreground">Loading domains...</div>
+        </div>
+      ) : (
+        <>
+          {viewMode === "hierarchy" ? (
+            /* Hierarchical Table View */
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead>Name & Description</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Documents</TableHead>
+                      <TableHead>Last Updated</TableHead>
+                      <TableHead className="w-12">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredDomains.map((domain) => (
+                      <>
+                        {/* Domain Row */}
+                        <TableRow key={domain.id} className="border-b-2">
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleDomainExpansion(domain.id)}
+                            >
+                              {expandedDomains.has(domain.id) ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded flex items-center justify-center text-lg" 
+                                   style={{ backgroundColor: domain.color + "20" }}>
+                                {domain.icon}
+                              </div>
+                              <div>
+                                <div className="font-semibold flex items-center gap-2">
+                                  <Globe className="h-4 w-4" />
+                                  {domain.name}
+                                </div>
+                                <div className="text-sm text-muted-foreground line-clamp-1">
+                                  {domain.description}
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" style={{ backgroundColor: domain.color + "20", color: domain.color }}>
+                              Domain ({domain.use_cases.length} use cases)
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(domain.is_active, domain.document_count)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{domain.document_count}</span>
+                              {domain.document_count > 0 && (
+                                <Button variant="ghost" size="sm">
+                                  <Eye className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {new Date(domain.updated_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleCopyDomain(domain)}>
+                                  <Copy className="h-4 w-4 mr-2" />
+                                  Copy Domain + Use Cases
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Add Use Case
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>
+                                  <Edit2 className="h-4 w-4 mr-2" />
+                                  Edit Domain
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-red-600">
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Domain
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+
+                        {/* Use Cases Rows (when expanded) */}
+                        {expandedDomains.has(domain.id) && domain.use_cases.map((useCase) => (
+                          <TableRow key={useCase.id} className="bg-muted/30">
+                            <TableCell className="pl-8">
+                              <div className="w-4 h-4 border-l border-b border-muted-foreground/30 rounded-bl"></div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-3 pl-4">
+                                <Tag className="h-4 w-4 text-muted-foreground" />
+                                <div>
+                                  <div className="font-medium">{useCase.name}</div>
+                                  <div className="text-sm text-muted-foreground line-clamp-1">
+                                    {useCase.description}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {getCategoryBadge(useCase.category)}
+                            </TableCell>
+                            <TableCell>
+                              {getStatusBadge(useCase.is_active, useCase.document_count)}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{useCase.document_count}</span>
+                                {useCase.document_count > 0 && (
+                                  <Button variant="ghost" size="sm">
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {new Date(useCase.updated_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleCopyUseCase(useCase)}>
+                                    <Copy className="h-4 w-4 mr-2" />
+                                    Copy to Same Domain
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem>
+                                    <Move className="h-4 w-4 mr-2" />
+                                    Copy to Other Domain
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem>
+                                    <Users className="h-4 w-4 mr-2" />
+                                    Move to Other Domain
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem>
+                                    <Edit2 className="h-4 w-4 mr-2" />
+                                    Edit Use Case
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-red-600">
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Use Case
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          ) : (
+            /* Card View */
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredDomains.map((domain) => (
+                <Card key={domain.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl" 
+                             style={{ backgroundColor: domain.color + "20" }}>
+                          {domain.icon}
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg">{domain.name}</CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            {domain.use_cases.length} use cases • {domain.document_count} docs
+                          </p>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleCopyDomain(domain)}>
+                            <Copy className="h-4 w-4 mr-2" />
+                            Copy Domain
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Edit2 className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Domain Description */}
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {domain.description}
+                      </p>
+                      
+                      {/* Domain Status */}
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(domain.is_active, domain.document_count)}
+                        <Badge variant="outline" style={{ backgroundColor: domain.color + "20", color: domain.color }}>
+                          Domain
+                        </Badge>
+                      </div>
+
+                      {/* Use Cases List */}
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium flex items-center gap-2">
+                          <Tag className="h-4 w-4" />
+                          Use Cases ({domain.use_cases.length})
+                        </div>
+                        <div className="space-y-1 pl-6">
+                          {domain.use_cases.slice(0, 3).map((useCase) => (
+                            <div key={useCase.id} className="flex items-center justify-between text-sm">
+                              <span className="truncate">{useCase.name}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">{useCase.document_count}</span>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                      <MoreVertical className="h-3 w-3" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleCopyUseCase(useCase)}>
+                                      <Copy className="h-4 w-4 mr-2" />
+                                      Copy
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem>
+                                      <Move className="h-4 w-4 mr-2" />
+                                      Move
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </div>
+                          ))}
+                          {domain.use_cases.length > 3 && (
+                            <div className="text-xs text-muted-foreground">
+                              +{domain.use_cases.length - 3} more use cases
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Quick Actions */}
+                      <div className="flex items-center gap-2 pt-2 border-t">
+                        <Button variant="outline" size="sm" onClick={() => handleCopyDomain(domain)}>
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copy
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add Use Case
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Create Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Domain</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name">Domain Name</Label>
+              <Input
+                id="name"
+                value={newItem.name}
+                onChange={(e) => setNewItem(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter domain name"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={newItem.description}
+                onChange={(e) => setNewItem(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter description..."
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="color">Color</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    id="color"
+                    value={newItem.color}
+                    onChange={(e) => setNewItem(prev => ({ ...prev, color: e.target.value }))}
+                    className="w-10 h-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={newItem.color}
+                    onChange={(e) => setNewItem(prev => ({ ...prev, color: e.target.value }))}
+                    placeholder="#3B82F6"
+                    className="font-mono text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="icon">Icon (Emoji)</Label>
+                <Input
+                  id="icon"
+                  value={newItem.icon}
+                  onChange={(e) => setNewItem(prev => ({ ...prev, icon: e.target.value }))}
+                  placeholder="🏢"
+                  className="text-lg"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              Cancel
+            </Button>
+            <Button disabled={!newItem.name}>
+              Create Domain
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+} 

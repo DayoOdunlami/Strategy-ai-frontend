@@ -1,6 +1,5 @@
-import { DomainSectorManager } from "@/components/domains/domain-sector-manager"
+import { IntegratedDomainManager } from "@/components/domains/integrated-domain-manager"
 
 export function DomainManagement() {
-
-  return <DomainSectorManager />
+  return <IntegratedDomainManager />
 }
