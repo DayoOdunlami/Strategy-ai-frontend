@@ -56,6 +56,48 @@ export function DocumentDiscovery() {
   })
   const { useSampleData } = useDemoMode()
 
+  // Use case options by sector
+  const useCasesBySector = {
+    rail: [
+      "strategy",
+      "general", 
+      "Quick Playbook Answers",
+      "Lessons Learned", 
+      "Project Review / MOT",
+      "TRL / RIRL Mapping",
+      "Project Similarity",
+      "Change Management",
+      "Product Acceptance"
+    ],
+    maritime: [
+      "strategy",
+      "general",
+      "Quick Playbook Answers",
+      "Lessons Learned",
+      "Project Review / MOT", 
+      "Change Management"
+    ],
+    highways: [
+      "strategy", 
+      "general",
+      "Project Similarity",
+      "Change Management",
+      "TRL / RIRL Mapping"
+    ],
+    general: [
+      "strategy",
+      "general"
+    ]
+  }
+
+  const getUseCaseOptions = (sector: string) => {
+    if (!sector || sector === "all") {
+      // Return all unique use cases if no sector selected
+      return [...new Set(Object.values(useCasesBySector).flat())]
+    }
+    return useCasesBySector[sector.toLowerCase() as keyof typeof useCasesBySector] || []
+  }
+
   useEffect(() => {
     loadDocuments()
   }, [searchQuery, selectedSector, sortBy, useSampleData])
@@ -370,6 +412,42 @@ export function DocumentDiscovery() {
       )
     }
 
+    if (type === "select" && field === "use_case") {
+      const doc = documents.find(d => d.id === docId)
+      const useCaseOptions = doc ? getUseCaseOptions(doc.sector) : []
+      
+      return (
+        <div className="flex items-center gap-2">
+          <Select value={editValue} onValueChange={setEditValue}>
+            <SelectTrigger className="h-8 w-48">
+              <SelectValue placeholder="Select use case" />
+            </SelectTrigger>
+            <SelectContent>
+              {useCaseOptions.map(useCase => (
+                <SelectItem key={useCase} value={useCase}>
+                  {useCase}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button 
+            size="sm" 
+            variant="ghost"
+            onClick={() => saveFieldEdit(docId, field, editValue)}
+          >
+            <Check className="h-3 w-3" />
+          </Button>
+          <Button 
+            size="sm" 
+            variant="ghost"
+            onClick={() => stopEditing(docId, field)}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      )
+    }
+
     return (
       <div className="flex items-center gap-2">
         <Input
@@ -614,6 +692,7 @@ export function DocumentDiscovery() {
                               docId={doc.id}
                               field="use_case"
                               value={doc.use_case || "—"}
+                              type="select"
                             />
                           </TableCell>
                           <TableCell>
@@ -766,12 +845,34 @@ export function DocumentDiscovery() {
 
             <div>
               <Label htmlFor="bulk-use-case">Use Case</Label>
-              <Input
-                id="bulk-use-case"
-                placeholder="Keep existing use cases"
-                value={bulkEditData.use_case}
-                onChange={(e) => setBulkEditData(prev => ({ ...prev, use_case: e.target.value }))}
-              />
+              <Select value={bulkEditData.use_case} onValueChange={(value) => 
+                setBulkEditData(prev => ({ ...prev, use_case: value }))
+              }>
+                <SelectTrigger>
+                  <SelectValue placeholder="Keep existing use cases" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Keep existing</SelectItem>
+                  {bulkEditData.sector ? (
+                    getUseCaseOptions(bulkEditData.sector).map(useCase => (
+                      <SelectItem key={useCase} value={useCase}>
+                        {useCase}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    getUseCaseOptions("all").map(useCase => (
+                      <SelectItem key={useCase} value={useCase}>
+                        {useCase}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              {bulkEditData.sector && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Showing use cases for {bulkEditData.sector} sector
+                </p>
+              )}
             </div>
 
             <div>
