@@ -229,72 +229,24 @@ export function DocumentUpload() {
   const analyzeFileForChunking = async (file: UploadFile) => {
     setUploadFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, status: "analyzing", progress: 10 } : f)))
 
-    try {
-      // Real AI analysis using backend API
-      const analysisResponse = await apiClient.documents.analyze(
-        file.file, 
-        metadata.domain || "General", 
-        metadata.useCase || "general"
-      )
-
-      if (analysisResponse.success && analysisResponse.analysis) {
-        const analysis = analysisResponse.analysis
+    // Simulate AI analysis
+    await new Promise((resolve) => setTimeout(resolve, 2000))
 
     const analysisResults = {
-          contentType: analysis.contentType,
-          complexity: analysis.complexity,
-          recommendedChunking: {
-            type: analysis.recommendedChunking.type as ChunkingMethod["type"],
-            size: analysis.recommendedChunking.size,
-            overlap: analysis.recommendedChunking.overlap,
-            strategy: analysis.recommendedChunking.strategy,
-          },
-          estimatedChunks: analysis.estimatedChunks,
-          aiInsights: analysis.aiInsights
-        }
-
-        setUploadFiles((prev) =>
-          prev.map((f) => (f.id === file.id ? { ...f, status: "pending", progress: 0, analysisResults } : f)),
-        )
-      } else {
-        // Fallback to basic analysis if AI fails
-        console.warn("AI analysis failed, using fallback:", analysisResponse.error)
-        const basicAnalysisResults = {
       contentType: file.file.type.includes("pdf") ? "PDF Document" : "Text Document",
-          complexity: "medium" as const,
+      complexity: (["low", "medium", "high"] as const)[Math.floor(Math.random() * 3)],
       recommendedChunking: {
-            type: "fixed-size" as const,
-            size: 1000,
-            overlap: 200,
-            strategy: "Standard chunking (AI unavailable)",
+        type: "semantic" as const,
+        size: 800,
+        overlap: 150,
+        strategy: "Context-aware semantic boundaries",
       },
       estimatedChunks: Math.ceil(file.file.size / 1000),
     }
 
     setUploadFiles((prev) =>
-          prev.map((f) => (f.id === file.id ? { ...f, status: "pending", progress: 0, analysisResults: basicAnalysisResults } : f)),
+      prev.map((f) => (f.id === file.id ? { ...f, status: "pending", progress: 0, analysisResults } : f)),
     )
-      }
-    } catch (error) {
-      console.error("AI analysis error:", error)
-      
-      // Fallback to basic analysis on error
-      const basicAnalysisResults = {
-        contentType: file.file.type.includes("pdf") ? "PDF Document" : "Text Document",
-        complexity: "medium" as const,
-        recommendedChunking: {
-          type: "fixed-size" as const,
-          size: 1000,
-          overlap: 200,
-          strategy: "Standard chunking (AI error)",
-        },
-        estimatedChunks: Math.ceil(file.file.size / 1000),
-      }
-
-      setUploadFiles((prev) =>
-        prev.map((f) => (f.id === file.id ? { ...f, status: "pending", progress: 0, analysisResults: basicAnalysisResults } : f)),
-      )
-    }
   }
 
   const addTopic = () => {
@@ -401,11 +353,7 @@ export function DocumentUpload() {
       setUploadFiles((prev) =>
         prev.map((file) =>
           file.id === uploadFile.id
-            ? { 
-                ...file, 
-                progress: 100, 
-                status: response.status === "processing" || response.status === "completed" ? "complete" : "complete" 
-              }
+            ? { ...file, progress: 100, status: response.status === "processing" ? "processing" : "complete" }
             : file,
         ),
       )
