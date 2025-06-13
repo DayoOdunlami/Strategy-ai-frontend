@@ -285,21 +285,41 @@ export function DocumentDiscovery() {
 
   const saveFieldEdit = async (docId: string, field: string, value: string) => {
     try {
-      // Update local state immediately for responsiveness
-      setDocuments(prev => prev.map(doc => 
-        doc.id === docId ? { ...doc, [field]: value } : doc
-      ))
-      
+      setDocuments((prev: Document[]) => prev.map(doc => {
+        if (doc.id !== docId) return doc;
+        // If sector is being changed, check if current use_case is still valid
+        if (field === "sector") {
+          const validUseCases = getUseCaseOptions(value);
+          // If current use_case is not valid for new sector, clear it
+          return {
+            ...doc,
+            sector: value,
+            use_case: validUseCases.includes(doc.use_case || "") ? doc.use_case : ""
+          };
+        }
+        // If use_case is being changed, just update it
+        if (field === "use_case") {
+          return { ...doc, use_case: value };
+        }
+        // Default: update the field
+        return { ...doc, [field]: value };
+      }));
       if (!useSampleData) {
-        await apiClient.documents.update(docId, { [field]: value })
+        // If sector is being changed, also send use_case if it was cleared
+        if (field === "sector") {
+          const doc = documents.find(d => d.id === docId);
+          const validUseCases = getUseCaseOptions(value);
+          const newUseCase = doc && validUseCases.includes(doc.use_case || "") ? doc.use_case : "";
+          await apiClient.documents.update(docId, { sector: value, use_case: newUseCase });
+        } else {
+          await apiClient.documents.update(docId, { [field]: value });
+        }
       }
-      
-      stopEditing(docId, field)
-      console.log(`Updated ${field} for doc ${docId} to: ${value}`)
+      stopEditing(docId, field);
+      console.log(`Updated ${field} for doc ${docId} to: ${value}`);
     } catch (error) {
-      console.error("Failed to update document:", error)
-      // Revert on error
-      loadDocuments()
+      console.error("Failed to update document:", error);
+      loadDocuments();
     }
   }
 
@@ -343,7 +363,7 @@ export function DocumentDiscovery() {
 
     try {
       // Update local state immediately for responsiveness
-      setDocuments(prev => prev.map(doc => 
+      setDocuments((prev: Document[]) => prev.map(doc => 
         selectedIds.includes(doc.id) ? { ...doc, ...updates } : doc
       ))
 
