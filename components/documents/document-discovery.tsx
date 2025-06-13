@@ -290,8 +290,9 @@ export function DocumentDiscovery() {
         doc.id === docId ? { ...doc, [field]: value } : doc
       ))
       
-      // TODO: Make API call to update document
-      // await apiClient.documents.update(docId, { [field]: value })
+      if (!useSampleData) {
+        await apiClient.documents.update(docId, { [field]: value })
+      }
       
       stopEditing(docId, field)
       console.log(`Updated ${field} for doc ${docId} to: ${value}`)

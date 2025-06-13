@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Filter, Globe, ChevronDown, ChevronRight, Tag, Eye, Grid, List, Edit2, Check, X, Download, Copy, Trash2, MoreVertical, Plus, AlertTriangle, Move, Users } from "lucide-react"
+import { Search, Filter, Globe, ChevronDown, ChevronRight, Tag, Eye, Grid, List, Edit2, Check, X, Download, Copy, Trash2, MoreVertical, Plus, AlertTriangle, Move, Users, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -741,6 +741,23 @@ export function IntegratedDomainManager() {
     }
   }
 
+  // Move use case up/down in a domain
+  const moveUseCaseInDomain = (domainId: string, useCaseId: string, direction: 'up' | 'down') => {
+    setDomains(prev => prev.map(domain => {
+      if (domain.id !== domainId) return domain
+      const idx = domain.use_cases.findIndex(uc => uc.id === useCaseId)
+      if (idx === -1) return domain
+      const newUseCases = [...domain.use_cases]
+      if (direction === 'up' && idx > 0) {
+        [newUseCases[idx - 1], newUseCases[idx]] = [newUseCases[idx], newUseCases[idx - 1]]
+      } else if (direction === 'down' && idx < newUseCases.length - 1) {
+        [newUseCases[idx], newUseCases[idx + 1]] = [newUseCases[idx + 1], newUseCases[idx]]
+      }
+      return { ...domain, use_cases: newUseCases }
+    }))
+    // TODO: Persist order to backend if supported
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -990,6 +1007,16 @@ export function IntegratedDomainManager() {
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
                               {new Date(useCase.updated_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="icon" disabled={domain.use_cases.findIndex(uc => uc.id === useCase.id) === 0} onClick={() => moveUseCaseInDomain(domain.id, useCase.id, 'up')}>
+                                  <ChevronUp className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" disabled={domain.use_cases.findIndex(uc => uc.id === useCase.id) === domain.use_cases.length - 1} onClick={() => moveUseCaseInDomain(domain.id, useCase.id, 'down')}>
+                                  <ChevronDown className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                             <TableCell>
                               <DropdownMenu>
