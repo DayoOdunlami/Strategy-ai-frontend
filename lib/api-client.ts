@@ -372,6 +372,14 @@ const apiClient = {
         method: 'DELETE'
       })
     },
+
+    update: async (documentId: string, updates: Partial<Document>) => {
+      return apiCall(`/documents/${documentId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+        headers: { 'Content-Type': 'application/json' }
+      })
+    },
   },
 
   // Semantic search
