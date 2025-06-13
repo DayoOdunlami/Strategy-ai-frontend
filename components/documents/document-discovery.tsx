@@ -287,29 +287,41 @@ export function DocumentDiscovery() {
     try {
       setDocuments((prev: Document[]) => prev.map(doc => {
         if (doc.id !== docId) return doc;
-        // If sector is being changed, check if current use_case is still valid
         if (field === "sector") {
           const validUseCases = getUseCaseOptions(value);
-          // If current use_case is not valid for new sector, clear it
+          let newUseCase = doc.use_case;
+          if (!validUseCases.includes(doc.use_case || "")) {
+            if (validUseCases.includes("Unallocated")) {
+              newUseCase = "Unallocated";
+            } else if (validUseCases.length > 0) {
+              newUseCase = validUseCases[0];
+            } else {
+              newUseCase = "";
+            }
+          }
           return {
             ...doc,
             sector: value,
-            use_case: validUseCases.includes(doc.use_case || "") ? doc.use_case : ""
+            use_case: newUseCase
           };
         }
-        // If use_case is being changed, just update it
         if (field === "use_case") {
           return { ...doc, use_case: value };
         }
-        // Default: update the field
         return { ...doc, [field]: value };
       }));
       if (!useSampleData) {
-        // If sector is being changed, also send use_case if it was cleared
         if (field === "sector") {
           const doc = documents.find(d => d.id === docId);
           const validUseCases = getUseCaseOptions(value);
-          const newUseCase = doc && validUseCases.includes(doc.use_case || "") ? doc.use_case : "";
+          let newUseCase = doc && validUseCases.includes(doc.use_case || "") ? doc.use_case : "";
+          if (!newUseCase) {
+            if (validUseCases.includes("Unallocated")) {
+              newUseCase = "Unallocated";
+            } else if (validUseCases.length > 0) {
+              newUseCase = validUseCases[0];
+            }
+          }
           await apiClient.documents.update(docId, { sector: value, use_case: newUseCase });
         } else {
           await apiClient.documents.update(docId, { [field]: value });
