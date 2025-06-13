@@ -59,6 +59,15 @@ export function IntegratedDomainManager() {
     domain_id: ""
   })
 
+  // Add Use Case dialog state
+  const [showAddUseCaseDialog, setShowAddUseCaseDialog] = useState(false)
+  const [addUseCaseDomainId, setAddUseCaseDomainId] = useState<string | null>(null)
+  const [newUseCase, setNewUseCase] = useState({
+    name: '',
+    description: '',
+    category: 'General',
+  })
+
   // Demo data with integrated structure  
   const demoDomains: DomainWithUseCases[] = [
     {
@@ -676,12 +685,60 @@ export function IntegratedDomainManager() {
     }
   }
 
-  const handleCreateUseCase = async (domainId: string) => {
-    // For now, just show a placeholder - we could add a use case creation dialog later
-    toast({
-      title: "Add Use Case",
-      description: "Use case creation dialog coming soon! For now, you can copy existing use cases.",
-    })
+  const openAddUseCaseDialog = (domainId: string) => {
+    setAddUseCaseDomainId(domainId)
+    setNewUseCase({ name: '', description: '', category: 'General' })
+    setShowAddUseCaseDialog(true)
+  }
+
+  const handleCreateUseCase = async () => {
+    if (!addUseCaseDomainId || !newUseCase.name.trim()) return
+    try {
+      if (!demoMode) {
+        await apiClient.useCases.create({
+          name: newUseCase.name,
+          description: newUseCase.description,
+          category: newUseCase.category,
+          domain_id: addUseCaseDomainId,
+        })
+        await loadData()
+        toast({
+          title: '✅ Use Case Created Successfully',
+          description: `"${newUseCase.name}" has been added.`,
+        })
+      } else {
+        // Demo mode: add to local state
+        setDomains(prev => prev.map(domain =>
+          domain.id === addUseCaseDomainId
+            ? {
+                ...domain,
+                use_cases: [
+                  ...domain.use_cases,
+                  {
+                    id: `uc_${Date.now()}`,
+                    name: newUseCase.name,
+                    description: newUseCase.description,
+                    category: newUseCase.category,
+                    domain_id: addUseCaseDomainId,
+                    is_active: true,
+                    document_count: 0,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  },
+                ],
+              }
+            : domain
+        ))
+        toast({
+          title: '✅ Use Case Created Successfully',
+          description: `"${newUseCase.name}" has been added.`,
+        })
+      }
+      setShowAddUseCaseDialog(false)
+    } catch (error) {
+      console.error('Failed to create use case:', error)
+      setError('Failed to create use case. Please try again.')
+    }
   }
 
   return (
@@ -866,7 +923,7 @@ export function IntegratedDomainManager() {
                                   <Copy className="h-4 w-4 mr-2" />
                                   Copy Domain + Use Cases
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleCreateUseCase(domain.id)}>
+                                <DropdownMenuItem onClick={() => openAddUseCaseDialog(domain.id)}>
                                   <Plus className="h-4 w-4 mr-2" />
                                   Add Use Case
                                 </DropdownMenuItem>
@@ -1092,7 +1149,7 @@ export function IntegratedDomainManager() {
                           <Copy className="h-3 w-3 mr-1" />
                           Copy
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleCreateUseCase(domain.id)}>
+                        <Button variant="outline" size="sm" onClick={() => openAddUseCaseDialog(domain.id)}>
                           <Plus className="h-3 w-3 mr-1" />
                           Add Use Case
                         </Button>
@@ -1174,6 +1231,64 @@ export function IntegratedDomainManager() {
             </Button>
             <Button disabled={!newItem.name} onClick={handleCreateDomain}>
               Create Domain
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Use Case Dialog */}
+      <Dialog open={showAddUseCaseDialog} onOpenChange={setShowAddUseCaseDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Use Case</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name">Use Case Name</Label>
+              <Input
+                id="name"
+                value={newUseCase.name}
+                onChange={(e) => setNewUseCase(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter use case name"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={newUseCase.description}
+                onChange={(e) => setNewUseCase(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter description..."
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="category">Category</Label>
+              <Select value={newUseCase.category} onValueChange={(value) => setNewUseCase(prev => ({ ...prev, category: value }))} className="w-full">
+                <SelectTrigger className="w-full h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Strategic">Strategic</SelectItem>
+                  <SelectItem value="Operational">Operational</SelectItem>
+                  <SelectItem value="Assessment">Assessment</SelectItem>
+                  <SelectItem value="Knowledge">Knowledge</SelectItem>
+                  <SelectItem value="Analysis">Analysis</SelectItem>
+                  <SelectItem value="General">General</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddUseCaseDialog(false)}>
+              Cancel
+            </Button>
+            <Button disabled={!newUseCase.name} onClick={handleCreateUseCase}>
+              Create Use Case
             </Button>
           </DialogFooter>
         </DialogContent>
